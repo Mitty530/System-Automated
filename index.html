@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Withdrawal Request Tracker - AI-Powered OCR System</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Mock data for the withdrawal request system
+        const mockUsers = {
+          'archive001': { id: 1, username: 'archive001', name: 'Sarah Archive', role: 'archive', avatar: '👩‍💼' },
+          'admin001': { id: 2, username: 'admin001', name: 'John Administrator', role: 'loan_admin', avatar: '👨‍💼' },
+          'ops_a': { id: 3, username: 'ops_a', name: 'Ahmed Operations', role: 'operations', avatar: '👨‍🔧', region: 'North Africa' },
+          'ops_b': { id: 4, username: 'ops_b', name: 'Fatima Operations', role: 'operations', avatar: '👩‍🔧', region: 'Central Africa' },
+          'ops_c': { id: 5, username: 'ops_c', name: 'Chen Operations', role: 'operations', avatar: '👨‍💼', region: 'South East Asia' },
+          'ops_d': { id: 6, username: 'ops_d', name: 'Amira Operations', role: 'operations', avatar: '👩‍💼', region: 'Central Asia' },
+          'bank001': { id: 7, username: 'bank001', name: 'Lisa Banking', role: 'core_banking', avatar: '👩‍💻' }
+        };
+
+        const regionMapping = {
+          'Egypt': 'North Africa', 'Libya': 'North Africa', 'Tunisia': 'North Africa', 'Algeria': 'North Africa', 'Morocco': 'North Africa', 'Sudan': 'North Africa',
+          'Chad': 'Central Africa', 'Nigeria': 'Central Africa', 'Kenya': 'Central Africa', 'Cameroon': 'Central Africa',
+          'Malaysia': 'South East Asia', 'Indonesia': 'South East Asia', 'Thailand': 'South East Asia', 'Vietnam': 'South East Asia', 'Philippines': 'South East Asia', 'Singapore': 'South East Asia',
+          'Kazakhstan': 'Central Asia', 'Uzbekistan': 'Central Asia', 'Kyrgyzstan': 'Central Asia', 'Tajikistan': 'Central Asia', 'Afghanistan': 'Central Asia', 'Pakistan': 'Central Asia'
+        };
+
+        const initialRequests = [
+          {
+            id: 1, projectNumber: 'EGY-2024-001', country: 'Egypt', refNumber: 'WR/EGY/001/2024',
+            beneficiaryName: 'Cairo Infrastructure Development Co.', amount: 2500000, currency: 'USD',
+            valueDate: '2024-01-15', priority: 'high', status: 'Approved - Sent to Core Banking',
+            currentStage: 'core_banking', assignedTo: 7, processingDays: 8, createdAt: '2024-01-07T10:00:00Z', updatedAt: '2024-01-15T14:30:00Z'
+          },
+          {
+            id: 2, projectNumber: 'MYS-2024-002', country: 'Malaysia', refNumber: 'WR/MYS/002/2024',
+            beneficiaryName: 'Kuala Lumpur Metro Systems Sdn Bhd', amount: 1800000, currency: 'USD',
+            valueDate: '2024-01-20', priority: 'medium', status: 'Under Technical Review',
+            currentStage: 'technical_review', assignedTo: 5, processingDays: 5, createdAt: '2024-01-10T09:15:00Z', updatedAt: '2024-01-15T11:20:00Z'
+          },
+          {
+            id: 3, projectNumber: 'NGA-2024-003', country: 'Nigeria', refNumber: 'WR/NGA/003/2024',
+            beneficiaryName: 'Lagos Port Authority', amount: 3200000, currency: 'USD',
+            valueDate: '2024-01-25', priority: 'high', status: 'Pending Initial Review',
+            currentStage: 'initial_review', assignedTo: 4, processingDays: 3, createdAt: '2024-01-12T14:45:00Z', updatedAt: '2024-01-15T16:10:00Z'
+          },
+          {
+            id: 4, projectNumber: 'KAZ-2024-004', country: 'Kazakhstan', refNumber: 'WR/KAZ/004/2024',
+            beneficiaryName: 'Almaty Energy Solutions LLP', amount: 1500000, currency: 'USD',
+            valueDate: '2024-01-30', priority: 'medium', status: 'Disbursed Successfully',
+            currentStage: 'disbursed', assignedTo: 6, processingDays: 12, createdAt: '2024-01-03T08:30:00Z', updatedAt: '2024-01-15T17:45:00Z'
+          },
+          {
+            id: 5, projectNumber: 'TUN-2024-005', country: 'Tunisia', refNumber: 'WR/TUN/005/2024',
+            beneficiaryName: 'Tunis Water Management Authority', amount: 950000, currency: 'USD',
+            valueDate: '2024-02-05', priority: 'low', status: 'Under Technical Review',
+            currentStage: 'technical_review', assignedTo: 3, processingDays: 7, createdAt: '2024-01-08T13:20:00Z', updatedAt: '2024-01-15T12:55:00Z'
+          }
+        ];
+
+        const WithdrawalRequestTracker = () => {
+          // State management
+          const [currentUser, setCurrentUser] = useState(null);
+          const [requests, setRequests] = useState(initialRequests);
+          const [showLoginModal, setShowLoginModal] = useState(true);
+          const [showCreateRequest, setShowCreateRequest] = useState(false);
+          const [showModal, setShowModal] = useState(false);
+          const [selectedRequest, setSelectedRequest] = useState(null);
+          const [filterStatus, setFilterStatus] = useState('all');
+          const [searchTerm, setSearchTerm] = useState('');
+          const [showMessage, setShowMessage] = useState(false);
+          const [messageContent, setMessageContent] = useState({ title: '', message: '', type: 'success' });
+          const [ocrProcessing, setOcrProcessing] = useState(false);
+          const [ocrResults, setOcrResults] = useState(null);
+          const [auditTrail, setAuditTrail] = useState({});
+          const [showAuditModal, setShowAuditModal] = useState(false);
+          const [selectedAuditRequest, setSelectedAuditRequest] = useState(null);
+          const [activeView, setActiveView] = useState('dashboard');
+          const [analyticsDateRange, setAnalyticsDateRange] = useState('30days');
+          const [selectedRegionFilter, setSelectedRegionFilter] = useState('all');
+          const [notifications, setNotifications] = useState([
+            { id: 1, type: 'urgent', title: 'SLA Breach Alert', message: '2 requests approaching deadline', timestamp: new Date().toISOString(), read: false },
+            { id: 2, type: 'approval', title: 'Batch Approved', message: '5 requests approved by Ahmed Operations', timestamp: new Date(Date.now() - 3600000).toISOString(), read: false },
+            { id: 3, type: 'reminder', title: 'Daily Summary', message: '12 new requests processed today', timestamp: new Date(Date.now() - 7200000).toISOString(), read: true }
+          ]);
+          const [newRequestData, setNewRequestData] = useState({
+            projectNumber: '', country: '', refNumber: '', beneficiaryName: '',
+            amount: '', currency: 'USD', valueDate: '', priority: 'medium'
+          });
+
+          // Initialize audit trail data
+          useEffect(() => {
+            const initialAuditTrail = {};
+            requests.forEach(request => {
+              initialAuditTrail[request.id] = [
+                {
+                  id: `${request.id}-1`,
+                  timestamp: request.createdAt,
+                  userId: 1,
+                  action: 'Request created',
+                  details: `Withdrawal request ${request.projectNumber} created via OCR extraction for ${request.beneficiaryName}`
+                },
+                {
+                  id: `${request.id}-2`,
+                  timestamp: new Date(new Date(request.createdAt).getTime() + 300000).toISOString(),
+                  userId: 1,
+                  action: 'Documents uploaded',
+                  details: `Supporting documents uploaded and processed via AI-powered OCR system`
+                }
+              ];
+
+              // Add stage-specific entries based on current stage
+              if (request.currentStage !== 'initial_review') {
+                initialAuditTrail[request.id].push({
+                  id: `${request.id}-3`,
+                  timestamp: new Date(new Date(request.createdAt).getTime() + 86400000).toISOString(),
+                  userId: request.assignedTo,
+                  action: 'Moved to Technical Review',
+                  details: `Request forwarded to technical review team for detailed assessment`
+                });
+              }
+
+              if (request.currentStage === 'core_banking' || request.currentStage === 'disbursed') {
+                initialAuditTrail[request.id].push({
+                  id: `${request.id}-4`,
+                  timestamp: new Date(new Date(request.createdAt).getTime() + 172800000).toISOString(),
+                  userId: request.assignedTo,
+                  action: 'Request approved',
+                  details: `Technical review completed successfully, approved for disbursement`
+                });
+              }
+
+              if (request.currentStage === 'disbursed') {
+                initialAuditTrail[request.id].push({
+                  id: `${request.id}-5`,
+                  timestamp: request.updatedAt,
+                  userId: 7,
+                  action: 'Disbursement processed',
+                  details: `Amount ${request.amount.toLocaleString()} ${request.currency} disbursed to ${request.beneficiaryName}`
+                });
+              }
+            });
+            setAuditTrail(initialAuditTrail);
+          }, []);
+
+          // Helper functions
+          const handleLogin = (username) => {
+            setCurrentUser(mockUsers[username]);
+            setShowLoginModal(false);
+          };
+
+          const handleLogout = () => {
+            setCurrentUser(null);
+            setShowLoginModal(true);
+          };
+
+          const showMessageModal = (title, message, type = 'success') => {
+            setMessageContent({ title, message, type });
+            setShowMessage(true);
+          };
+
+          const addAuditEntry = (requestId, userId, action, details) => {
+            const newEntry = {
+              id: `${requestId}-${Date.now()}`,
+              timestamp: new Date().toISOString(),
+              userId,
+              action,
+              details
+            };
+            setAuditTrail(prev => ({
+              ...prev,
+              [requestId]: [...(prev[requestId] || []), newEntry]
+            }));
+          };
+
+          const formatTimestamp = (timestamp) => {
+            return new Date(timestamp).toLocaleString('en-US', {
+              year: 'numeric', month: 'short', day: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            });
+          };
+
+          const getUserName = (userId) => {
+            const user = Object.values(mockUsers).find(u => u.id === userId);
+            return user ? user.name : 'Unknown User';
+          };
+
+          const getStatusIcon = (stage) => {
+            switch (stage) {
+              case 'initial_review': return '📝';
+              case 'technical_review': return '🔍';
+              case 'core_banking': return '🏦';
+              case 'disbursed': return '✅';
+              default: return '❓';
+            }
+          };
+
+          const getPriorityColor = (priority) => {
+            switch (priority) {
+              case 'high': return 'bg-red-100 text-red-800';
+              case 'medium': return 'bg-yellow-100 text-yellow-800';
+              case 'low': return 'bg-green-100 text-green-800';
+              default: return 'bg-gray-100 text-gray-800';
+            }
+          };
+
+          // Get audit trail icon based on action
+          const getAuditIcon = (action) => {
+            if (action.includes('created')) return '🆕';
+            if (action.includes('uploaded')) return '📤';
+            if (action.includes('assigned')) return '👤';
+            if (action.includes('approved')) return '✅';
+            if (action.includes('rejected')) return '❌';
+            if (action.includes('disbursed') || action.includes('Disbursement')) return '💰';
+            if (action.includes('review')) return '🔍';
+            if (action.includes('issue') || action.includes('Issue')) return '⚠️';
+            if (action.includes('extension')) return '📅';
+            if (action.includes('moved') || action.includes('Moved')) return '➡️';
+            return '📝';
+          };
+
+          // Notification functions
+          const markNotificationRead = (id) => {
+            setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+          };
+
+          const dismissNotification = (id) => {
+            setNotifications(prev => prev.filter(n => n.id !== id));
+          };
+
+          const getNotificationIcon = (type) => {
+            switch (type) {
+              case 'urgent': return '🚨';
+              case 'approval': return '✅';
+              case 'reminder': return '⏰';
+              case 'info': return 'ℹ️';
+              default: return '📢';
+            }
+          };
+
+          const getNotificationColor = (type) => {
+            switch (type) {
+              case 'urgent': return 'from-red-500 to-pink-600';
+              case 'approval': return 'from-green-500 to-emerald-600';
+              case 'reminder': return 'from-amber-500 to-orange-600';
+              case 'info': return 'from-blue-500 to-indigo-600';
+              default: return 'from-gray-500 to-gray-600';
+            }
+          };
+
+          // Filter requests based on search and status
+          const filteredRequests = requests.filter(request => {
+            const matchesSearch = searchTerm === '' || 
+              request.projectNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              request.beneficiaryName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              request.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              request.refNumber.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            const matchesStatus = filterStatus === 'all' || request.currentStage === filterStatus;
+            
+            return matchesSearch && matchesStatus;
+          });
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+              {/* Header */}
+              <header className="bg-white/80 backdrop-blur-xl shadow-lg border-b border-white/20 sticky top-0 z-40">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="flex items-center justify-between h-20">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <span className="text-white text-2xl">💰</span>
+                      </div>
+                      <div>
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                          Withdrawal Request Tracker
+                        </h1>
+                        <p className="text-sm text-gray-600">AI-powered OCR • Regional auto-assignment • Real-time tracking • Strict role controls</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-6">
+                      {/* Navigation Tabs */}
+                      <div className="flex items-center space-x-1 bg-white/20 rounded-2xl p-1">
+                        {['dashboard', 'analytics', 'notifications'].map(view => 
+                          <button
+                            key={view}
+                            onClick={() => setActiveView(view)}
+                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                              activeView === view 
+                                ? 'bg-white text-gray-900 shadow-lg' 
+                                : 'text-white hover:bg-white/20'
+                            }`}
+                          >
+                            {view === 'dashboard' ? '📊 Dashboard' :
+                             view === 'analytics' ? '📈 Analytics' :
+                             view === 'notifications' ? `🔔 Notifications ${notifications.filter(n => !n.read).length > 0 ? `(${notifications.filter(n => !n.read).length})` : ''}` : view}
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => currentUser?.role === 'archive' ? setShowCreateRequest(true) : setShowLoginModal(true)}
+                        className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-2xl hover:from-green-600 hover:to-emerald-700 flex items-center space-x-2 shadow-lg transform hover:scale-105 transition-all duration-200"
+                      >
+                        <span>➕</span>
+                        <span className="font-medium">New Request</span>
+                        <span className="text-xs bg-white/20 px-2 py-1 rounded-lg">Archive Only</span>
+                      </button>
+                      {currentUser ? (
+                        <div className="flex items-center space-x-3 bg-white/50 backdrop-blur-md rounded-2xl px-4 py-3 shadow-lg">
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-500 rounded-xl flex items-center justify-center text-lg">
+                            {currentUser.avatar}
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold text-gray-800">{currentUser.name}</div>
+                            <div className="text-xs text-gray-600 capitalize">{currentUser.role.replace('_', ' ')}</div>
+                          </div>
+                          <button onClick={handleLogout} className="p-2 text-gray-500 hover:text-gray-700 hover:bg-white/50 rounded-xl transition-all duration-200">
+                            🚪
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowLoginModal(true)}
+                          className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-2xl hover:from-blue-600 hover:to-purple-700 flex items-center space-x-2 shadow-lg transform hover:scale-105 transition-all duration-200"
+                        >
+                          <span>🛡️</span>
+                          <span className="font-medium">Login</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </header>
+
+              {/* Main Content */}
+              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {activeView === 'dashboard' && (
+                  <div>
+                    {/* Core Banking Alert */}
+                    {currentUser && currentUser.role === 'core_banking' && requests.filter(r => r.currentStage === 'core_banking').length > 0 && (
+                      <div className="mb-8 bg-gradient-to-r from-emerald-500 to-green-600 text-white p-6 rounded-3xl shadow-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                              <span className="text-2xl">🏦</span>
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold">Disbursement Required</h3>
+                              <p className="text-emerald-100">
+                                {requests.filter(r => r.currentStage === 'core_banking').length} request(s) ready for Core Banking disbursement
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold">
+                              {requests.filter(r => r.currentStage === 'core_banking').reduce((sum, r) => sum + r.amount, 0).toLocaleString()}
+                            </div>
+                            <div className="text-emerald-100 text-sm">Total Amount Ready</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Statistics Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                      {[
+                        { title: 'Total Requests', value: requests.length, icon: '📊', color: 'from-blue-500 to-indigo-600', desc: 'All time' },
+                        { title: 'Pending Review', value: requests.filter(r => r.currentStage === 'initial_review').length, icon: '⏳', color: 'from-amber-500 to-orange-600', desc: 'Awaiting action' },
+                        { title: 'In Progress', value: requests.filter(r => ['technical_review', 'core_banking'].includes(r.currentStage)).length, icon: '🔄', color: 'from-purple-500 to-pink-600', desc: 'Being processed' },
+                        { title: 'Completed', value: requests.filter(r => r.currentStage === 'disbursed').length, icon: '✅', color: 'from-emerald-500 to-green-600', desc: 'Successfully disbursed' }
+                      ].map((stat, index) => (
+                        <div key={index} className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/20 hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
+                              <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
+                              <p className="text-xs text-gray-500">{stat.desc}</p>
+                            </div>
+                            <div className={`w-12 h-12 bg-gradient-to-r ${stat.color} rounded-2xl flex items-center justify-center shadow-lg`}>
+                              <span className="text-2xl">{stat.icon}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Regional Operations Overview */}
+                    <div className="mb-8 bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/20">
+                      <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                        <span className="mr-2">🌍</span>
+                        Regional Operations Teams
+                      </h2>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {Object.values(mockUsers).filter(user => user.role === 'operations').map((team) => {
+                          const countries = Object.keys(regionMapping).filter(country => regionMapping[country] === team.region);
+                          const count = requests.filter(r => countries.includes(r.country) && r.currentStage !== 'disbursed').length;
+                          return (
+                            <div key={team.id} className="bg-gradient-to-br from-white to-gray-50 p-4 rounded-2xl border border-gray-200 hover:shadow-lg transition-all duration-200">
+                              <div className="flex items-center space-x-3 mb-3">
+                                <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-xl flex items-center justify-center text-xl">
+                                  {team.avatar}
+                                </div>
+                                <div>
+                                  <h3 className="font-bold text-gray-900">{team.member}</h3>
+                                  <p className="text-sm text-blue-600">{team.region}</p>
+                                </div>
+                              </div>
+                              <div className="text-center mb-3">
+                                <div className="text-2xl font-bold text-gray-900">{count}</div>
+                                <div className="text-sm text-gray-600">Active Requests</div>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {countries.slice(0, 3).join(', ')}{countries.length > 3 ? ` +${countries.length - 3} more` : ''}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Live Process Tracking */}
+                    <div className="mb-8 bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/20">
+                      <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                        <span className="mr-2">🔄</span>
+                        Live Process Tracking
+                      </h2>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        {[
+                          { name: 'Initial Review', stage: 'initial_review', count: requests.filter(r => r.currentStage === 'initial_review').length, color: 'from-orange-500 to-red-500' },
+                          { name: 'Technical Review', stage: 'technical_review', count: requests.filter(r => r.currentStage === 'technical_review').length, color: 'from-amber-500 to-orange-500' },
+                          { name: 'Core Banking', stage: 'core_banking', count: requests.filter(r => r.currentStage === 'core_banking').length, color: 'from-blue-500 to-indigo-500' },
+                          { name: 'Disbursed', stage: 'disbursed', count: requests.filter(r => r.currentStage === 'disbursed').length, color: 'from-emerald-500 to-green-500' }
+                        ].map((stage) => (
+                          <div key={stage.stage} className="text-center p-4 bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-200 hover:shadow-lg transition-all duration-200">
+                            <div className={`w-16 h-16 bg-gradient-to-r ${stage.color} rounded-3xl flex items-center justify-center mx-auto mb-3 shadow-lg`}>
+                              <span className="text-2xl font-bold text-white">{stage.count}</span>
+                            </div>
+                            <h3 className="font-semibold text-gray-900">{stage.name}</h3>
+                            <p className="text-sm text-gray-600">Active requests</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="mb-6 bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/20">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                        <div className="flex items-center space-x-4">
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">🔍</span>
+                            <input
+                              type="text"
+                              placeholder="Search by project, beneficiary, country, or reference..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="bg-transparent border-none outline-none w-72 text-gray-700 placeholder-gray-500"
+                            />
+                          </div>
+                          <select
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            className="bg-white/50 border border-white/20 rounded-2xl px-4 py-2 text-gray-700 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="all">All Stages</option>
+                            <option value="initial_review">Initial Review</option>
+                            <option value="technical_review">Technical Review</option>
+                            <option value="core_banking">Core Banking</option>
+                            <option value="disbursed">Disbursed</option>
+                          </select>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-2 bg-green-50 px-3 py-2 rounded-2xl">
+                            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-sm font-medium text-green-800">Live Tracking Active</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Requests Table */}
+                    <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg border border-white/20 overflow-hidden">
+                      <div className="p-6 border-b border-gray-200">
+                        <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                          <span className="mr-2">📋</span>
+                          Withdrawal Requests ({filteredRequests.length})
+                        </h2>
+                        <p className="text-sm text-gray-600 mt-1">
+                          🔍 OCR-powered extraction • 🌍 Regional auto-assignment • 🔒 Strict role controls
+                        </p>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full">
+                          <thead className="bg-gray-50/50">
+                            <tr>
+                              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Details</th>
+                              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Beneficiary & Location</th>
+                              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Processing Time</th>
+                              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {filteredRequests.map((request) => (
+                              <tr key={request.id} className="hover:bg-blue-50/50 transition-colors duration-200">
+                                <td className="px-6 py-6 whitespace-nowrap">
+                                  <div className="flex items-center space-x-3">
+                                    <div className={`w-3 h-3 rounded-full ${getPriorityColor(request.priority).replace('bg-', 'bg-').replace('text-', 'bg-')}`}></div>
+                                    <div>
+                                      <div className="text-sm font-medium text-gray-900">{request.projectNumber}</div>
+                                      <div className="text-xs text-gray-500">
+                                        {new Date(request.valueDate).toLocaleDateString()}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-6">
+                                  <div>
+                                    <div className="flex items-center space-x-2 mb-1">
+                                      <span className={`text-xs px-2 py-1 rounded-lg font-medium ${getPriorityColor(request.priority)}`}>
+                                        {request.priority}
+                                      </span>
+                                    </div>
+                                    <div className="text-sm text-gray-600">{request.country}</div>
+                                    <div className="text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded-lg inline-block">
+                                      {regionMapping[request.country] || 'Unknown Region'}
+                                    </div>
+                                    <div className="text-sm font-medium text-blue-600">{request.refNumber}</div>
+                                    <div className="text-sm text-gray-500">{request.beneficiaryName}</div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-6 whitespace-nowrap">
+                                  <div className="text-lg font-bold text-gray-900">
+                                    {request.amount.toLocaleString()} {request.currency}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-6">
+                                  <div className="flex items-center space-x-2 mb-2">
+                                    <span>{getStatusIcon(request.currentStage)}</span>
+                                    <span className="text-sm font-medium text-gray-900">
+                                      {request.currentStage.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-gray-600 max-w-xs">{request.status}</div>
+                                </td>
+                                <td className="px-6 py-6 whitespace-nowrap">
+                                  <div className="text-sm font-medium text-gray-900">{request.processingDays} days</div>
+                                  <div className="text-xs text-gray-500">Processing time</div>
+                                </td>
+                                <td className="px-6 py-6 whitespace-nowrap">
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={() => {
+                                        setSelectedRequest(request);
+                                        setShowModal(true);
+                                      }}
+                                      className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
+                                    >
+                                      👁️ View
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setSelectedAuditRequest(request);
+                                        setShowAuditModal(true);
+                                      }}
+                                      className="bg-purple-100 text-purple-800 px-3 py-1 rounded-lg text-xs font-medium hover:bg-purple-200 transition-colors"
+                                    >
+                                      📋 Audit
+                                    </button>
+                                    {request.currentStage === 'technical_review' && currentUser && currentUser.role === 'operations' && (
+                                      <div className="flex space-x-1">
+                                        <button
+                                          onClick={() => {
+                                            const now = new Date().toISOString();
+                                            setRequests(prev => prev.map(req =>
+                                              req.id === request.id
+                                                ? { ...req, status: 'Approved - Sent to Core Banking', currentStage: 'core_banking', assignedTo: 7, updatedAt: now }
+                                                : req
+                                            ));
+                                            addAuditEntry(request.id, currentUser.id, 'Request approved', `Technical review completed successfully, approved by ${currentUser.name}`);
+                                            addAuditEntry(request.id, 7, 'Moved to Core Banking', `Request forwarded to ${mockUsers.bank001.name} for disbursement processing`);
+                                            showMessageModal('Success', `Request #${request.projectNumber} approved and moved to Core Banking.`, 'success');
+                                          }}
+                                          className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs hover:bg-green-200 transition-colors"
+                                        >
+                                          ✅ Approve
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            const now = new Date().toISOString();
+                                            setRequests(prev => prev.map(req =>
+                                              req.id === request.id
+                                                ? { ...req, status: 'Rejected by Operations', currentStage: 'initial_review', updatedAt: now }
+                                                : req
+                                            ));
+                                            addAuditEntry(request.id, currentUser.id, 'Request rejected', `Request rejected by ${currentUser.name} and sent back for review`);
+                                            showMessageModal('Success', `Request #${request.projectNumber} rejected and sent back to Initial Review.`, 'success');
+                                          }}
+                                          className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs hover:bg-red-200 transition-colors"
+                                        >
+                                          ❌ Reject
+                                        </button>
+                                      </div>
+                                    )}
+                                    {request.currentStage === 'core_banking' && currentUser && currentUser.role === 'core_banking' && (
+                                      <button
+                                        onClick={() => {
+                                          const now = new Date().toISOString();
+                                          setRequests(prev => prev.map(req =>
+                                            req.id === request.id
+                                              ? { ...req, status: 'Disbursed', currentStage: 'disbursed', updatedAt: now }
+                                              : req
+                                          ));
+                                          addAuditEntry(request.id, currentUser.id, 'Disbursement processed', `Amount ${request.amount.toLocaleString()} ${request.currency} disbursed to ${request.beneficiaryName} by ${currentUser.name}`);
+                                          showMessageModal('Success', `Request #${request.projectNumber} marked as Disbursed.`, 'success');
+                                        }}
+                                        className="bg-green-100 text-green-800 px-3 py-1 rounded-lg text-xs font-medium hover:bg-green-200 transition-colors"
+                                      >
+                                        💰 Disburse
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Analytics Dashboard */}
+                {activeView === 'analytics' && (
+                  <div className="space-y-8">
+                    {/* Analytics Header */}
+                    <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/20">
+                      <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                        <span className="mr-3">📈</span>
+                        Advanced Analytics Dashboard
+                      </h2>
+                      <p className="text-gray-600 mt-2">Comprehensive insights and performance metrics for withdrawal request processing</p>
+                    </div>
+
+                    {/* Simple KPI Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                      <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/20">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                            <span className="text-2xl">🎯</span>
+                          </div>
+                        </div>
+                        <h3 className="text-sm font-medium text-gray-600 mb-1">Success Rate</h3>
+                        <div className="text-3xl font-bold text-gray-900">87.5%</div>
+                        <p className="text-xs text-gray-500">Requests completed successfully</p>
+                      </div>
+
+                      <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/20">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                            <span className="text-2xl">⚡</span>
+                          </div>
+                        </div>
+                        <h3 className="text-sm font-medium text-gray-600 mb-1">Avg Processing Time</h3>
+                        <div className="text-3xl font-bold text-gray-900">6.2 days</div>
+                        <p className="text-xs text-gray-500">Average time from creation to disbursement</p>
+                      </div>
+
+                      <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/20">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+                            <span className="text-2xl">📊</span>
+                          </div>
+                        </div>
+                        <h3 className="text-sm font-medium text-gray-600 mb-1">SLA Compliance</h3>
+                        <div className="text-3xl font-bold text-gray-900">92.3%</div>
+                        <p className="text-xs text-gray-500">Within 10 day target</p>
+                      </div>
+
+                      <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/20">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
+                            <span className="text-2xl">🔄</span>
+                          </div>
+                        </div>
+                        <h3 className="text-sm font-medium text-gray-600 mb-1">Active Requests</h3>
+                        <div className="text-3xl font-bold text-gray-900">{requests.filter(r => r.currentStage !== 'disbursed').length}</div>
+                        <p className="text-xs text-gray-500">Currently in processing pipeline</p>
+                      </div>
+                    </div>
+
+                    {/* Regional Performance */}
+                    <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/20">
+                      <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                        <span className="mr-2">🗺️</span>
+                        Regional Performance Overview
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        {[
+                          { region: 'North Africa', efficiency: 89, requests: requests.filter(r => ['Egypt', 'Libya', 'Tunisia', 'Algeria', 'Morocco', 'Sudan'].includes(r.country)).length, color: 'from-green-500 to-emerald-600' },
+                          { region: 'Central Africa', efficiency: 76, requests: requests.filter(r => ['Chad', 'Nigeria', 'Kenya', 'Cameroon'].includes(r.country)).length, color: 'from-yellow-500 to-orange-500' },
+                          { region: 'South East Asia', efficiency: 82, requests: requests.filter(r => ['Malaysia', 'Indonesia', 'Thailand', 'Vietnam', 'Philippines', 'Singapore'].includes(r.country)).length, color: 'from-green-500 to-emerald-600' },
+                          { region: 'Central Asia', efficiency: 94, requests: requests.filter(r => ['Kazakhstan', 'Uzbekistan', 'Kyrgyzstan', 'Tajikistan', 'Afghanistan', 'Pakistan'].includes(r.country)).length, color: 'from-green-500 to-emerald-600' }
+                        ].map((region) => (
+                          <div key={region.region} className={`bg-gradient-to-r ${region.color} p-4 rounded-2xl text-white`}>
+                            <h4 className="font-bold text-lg mb-2">{region.region}</h4>
+                            <div className="space-y-1 text-sm">
+                              <div className="flex justify-between">
+                                <span>Efficiency:</span>
+                                <span className="font-bold">{region.efficiency}%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Active Requests:</span>
+                                <span>{region.requests}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Process Flow */}
+                    <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/20">
+                      <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
+                        <span className="mr-2">🔄</span>
+                        Request Journey Flow
+                      </h3>
+                      <div className="flex items-center justify-between">
+                        {[
+                          { stage: 'initial_review', name: 'Initial Review', icon: '📝', color: 'from-orange-500 to-red-500', count: requests.filter(r => r.currentStage === 'initial_review').length },
+                          { stage: 'technical_review', name: 'Technical Review', icon: '🔍', color: 'from-amber-500 to-orange-500', count: requests.filter(r => r.currentStage === 'technical_review').length },
+                          { stage: 'core_banking', name: 'Core Banking', icon: '🏦', color: 'from-blue-500 to-indigo-500', count: requests.filter(r => r.currentStage === 'core_banking').length },
+                          { stage: 'disbursed', name: 'Disbursed', icon: '✅', color: 'from-emerald-500 to-green-500', count: requests.filter(r => r.currentStage === 'disbursed').length }
+                        ].map((stage, index) => (
+                          <div key={stage.stage} className="flex items-center">
+                            <div className="text-center">
+                              <div className={`w-20 h-20 bg-gradient-to-r ${stage.color} rounded-3xl flex items-center justify-center mx-auto mb-3 shadow-lg relative`}>
+                                <span className="text-3xl">{stage.icon}</span>
+                                <div className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg">
+                                  <span className="text-sm font-bold text-gray-900">{stage.count}</span>
+                                </div>
+                              </div>
+                              <h4 className="font-semibold text-gray-900 text-sm">{stage.name}</h4>
+                              <p className="text-xs text-gray-600 mt-1">
+                                {requests.length > 0 ? ((stage.count / requests.length) * 100).toFixed(1) : 0}% of total
+                              </p>
+                            </div>
+                            {index < 3 && (
+                              <div className="flex items-center mx-4">
+                                <div className="w-8 h-0.5 bg-gray-300"></div>
+                                <div className="w-0 h-0 border-l-4 border-l-gray-300 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Notifications Center */}
+                {activeView === 'notifications' && (
+                  <div className="space-y-6">
+                    {/* Notifications Header */}
+                    <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/20">
+                      <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                        <span className="mr-3">🔔</span>
+                        Notification Center
+                      </h2>
+                      <p className="text-gray-600 mt-2">Stay updated with real-time alerts and system notifications</p>
+                    </div>
+
+                    {/* Notifications List */}
+                    <div className="space-y-4">
+                      {notifications.length > 0 ? notifications.map((notification) => (
+                        <div key={notification.id} className={`bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-lg border border-white/20 ${!notification.read ? 'ring-2 ring-blue-200' : ''}`}>
+                          <div className="flex items-start space-x-4">
+                            <div className={`w-12 h-12 bg-gradient-to-r ${getNotificationColor(notification.type)} rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0`}>
+                              <span className="text-2xl">{getNotificationIcon(notification.type)}</span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-bold text-gray-900">{notification.title}</h3>
+                                <div className="flex items-center space-x-2">
+                                  {!notification.read && (
+                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                  )}
+                                  <span className="text-xs text-gray-500">
+                                    {formatTimestamp(notification.timestamp)}
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="text-gray-700 mb-3">{notification.message}</p>
+                              <div className="flex items-center space-x-3">
+                                {!notification.read && (
+                                  <button
+                                    onClick={() => markNotificationRead(notification.id)}
+                                    className="text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-200 transition-colors"
+                                  >
+                                    Mark as Read
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => dismissNotification(notification.id)}
+                                  className="text-xs bg-gray-100 text-gray-800 px-3 py-1 rounded-lg hover:bg-gray-200 transition-colors"
+                                >
+                                  Dismiss
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )) : (
+                        <div className="bg-white/80 backdrop-blur-xl p-12 rounded-3xl shadow-lg border border-white/20 text-center">
+                          <span className="text-6xl mb-4 block">🔔</span>
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">No Notifications</h3>
+                          <p className="text-gray-600">You're all caught up! No new notifications at this time.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </main>
+
+              {/* Login Modal */}
+              {showLoginModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowLoginModal(false)}>
+                  <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl max-w-md w-full border border-white/20" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-t-3xl">
+                      <h2 className="text-xl font-bold flex items-center">
+                        <span className="mr-2">🛡️</span>
+                        Select User Role
+                      </h2>
+                      <p className="text-blue-100 text-sm mt-1">Choose a user to simulate role-based access</p>
+                    </div>
+                    <div className="p-6 space-y-3">
+                      {Object.entries(mockUsers).map(([username, user]) => (
+                        <button
+                          key={username}
+                          onClick={() => handleLogin(username)}
+                          className="w-full flex items-center space-x-3 p-4 bg-gradient-to-r from-white to-gray-50 hover:from-blue-50 hover:to-purple-50 rounded-2xl border border-gray-200 hover:border-blue-300 transition-all duration-200 text-left"
+                        >
+                          <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-xl flex items-center justify-center text-xl">
+                            {user.avatar}
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-900">{user.name}</div>
+                            <div className="text-sm text-gray-600 capitalize">
+                              {user.role.replace('_', ' ')}
+                              {user.region && <span className="text-blue-600 ml-1">({user.region})</span>}
+                            </div>
+                          </div>
+                          <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-lg">
+                            {user.role === 'archive' ? 'Can Create' :
+                             user.role === 'operations' ? 'Can Approve/Reject' :
+                             user.role === 'core_banking' ? 'Can Disburse' : 'View Only'}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Create Request Modal */}
+              {showCreateRequest && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowCreateRequest(false)}>
+                  <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl max-w-4xl w-full border border-white/20 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-t-3xl">
+                      <h2 className="text-xl font-bold flex items-center">
+                        <span className="mr-2">➕</span>
+                        Create New Withdrawal Request
+                      </h2>
+                      <p className="text-emerald-100 text-sm mt-1">Upload documents for AI-powered OCR extraction and auto-assignment</p>
+                    </div>
+                    <div className="p-6">
+                      {/* OCR Demo Section */}
+                      <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
+                        <h3 className="font-bold text-blue-900 mb-2">🤖 AI-Powered OCR Extraction</h3>
+                        <p className="text-blue-800 text-sm mb-3">Upload withdrawal request documents for automatic data extraction</p>
+
+                        {ocrProcessing && (
+                          <div className="flex items-center space-x-3 p-3 bg-blue-100 rounded-xl">
+                            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                            <span className="text-blue-700">Extracting data from withdrawal request document...</span>
+                          </div>
+                        )}
+
+                        {ocrResults && (
+                          <div className="mt-4 p-4 bg-green-50 rounded-xl border border-green-200">
+                            <h4 className="font-bold text-green-900 mb-2">✅ OCR Extraction Complete</h4>
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              <div><strong className="text-green-900">Project:</strong> {ocrResults.projectNumber}</div>
+                              <div><strong className="text-green-900">Country:</strong> {ocrResults.country}</div>
+                              <div><strong className="text-green-900">Reference:</strong> {ocrResults.refNumber}</div>
+                              <div><strong className="text-green-900">Amount:</strong> {parseInt(ocrResults.amount).toLocaleString()} {ocrResults.currency}</div>
+                              <div><strong className="text-green-900">Beneficiary:</strong> {ocrResults.beneficiaryName}</div>
+                            </div>
+                          </div>
+                        )}
+
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            if (e.target.files[0]) {
+                              setOcrProcessing(true);
+                              setTimeout(() => {
+                                const mockOcrData = {
+                                  projectNumber: 'THA-2024-006',
+                                  country: 'Thailand',
+                                  refNumber: 'WR/THA/006/2024',
+                                  beneficiaryName: 'Bangkok Infrastructure Development Ltd.',
+                                  amount: '2750000',
+                                  currency: 'USD',
+                                  valueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
+                                  priority: 'medium'
+                                };
+                                setOcrResults(mockOcrData);
+                                setNewRequestData(prev => ({ ...prev, ...mockOcrData }));
+                                setOcrProcessing(false);
+                              }, 3000);
+                            }
+                          }}
+                          className="w-full p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* Form Fields */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Debug Info */}
+                        <div className="md:col-span-2 p-3 bg-gray-50 rounded-lg text-xs">
+                          <strong>Form Status:</strong>
+                          <span className="ml-2">
+                            Project: {newRequestData.projectNumber ? '✅' : '❌'} |
+                            Country: {newRequestData.country ? '✅' : '❌'} |
+                            Ref: {newRequestData.refNumber ? '✅' : '❌'} |
+                            Beneficiary: {newRequestData.beneficiaryName ? '✅' : '❌'} |
+                            Amount: {newRequestData.amount ? '✅' : '❌'} |
+                            Date: {newRequestData.valueDate ? '✅' : '❌'}
+                          </span>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Project Number *</label>
+                          <input
+                            type="text"
+                            value={newRequestData.projectNumber}
+                            onChange={(e) => setNewRequestData(prev => ({ ...prev, projectNumber: e.target.value }))}
+                            className="w-full p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="e.g., EGY-2024-001"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Country *</label>
+                          <select
+                            value={newRequestData.country}
+                            onChange={(e) => setNewRequestData(prev => ({ ...prev, country: e.target.value }))}
+                            className="w-full p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Select Country</option>
+                            {Object.keys(regionMapping).map(country => (
+                              <option key={country} value={country}>{country}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Reference Number *</label>
+                          <input
+                            type="text"
+                            value={newRequestData.refNumber}
+                            onChange={(e) => setNewRequestData(prev => ({ ...prev, refNumber: e.target.value }))}
+                            className="w-full p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="e.g., WR/EGY/001/2024"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Beneficiary Name *</label>
+                          <input
+                            type="text"
+                            value={newRequestData.beneficiaryName}
+                            onChange={(e) => setNewRequestData(prev => ({ ...prev, beneficiaryName: e.target.value }))}
+                            className="w-full p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Company or organization name"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Amount *</label>
+                          <input
+                            type="number"
+                            value={newRequestData.amount}
+                            onChange={(e) => setNewRequestData(prev => ({ ...prev, amount: e.target.value }))}
+                            className="w-full p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="e.g., 1500000"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Value Date *</label>
+                          <input
+                            type="date"
+                            value={newRequestData.valueDate}
+                            onChange={(e) => setNewRequestData(prev => ({ ...prev, valueDate: e.target.value }))}
+                            className="w-full p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-end space-x-4 mt-6">
+                        <button
+                          onClick={() => setShowCreateRequest(false)}
+                          className="px-6 py-3 bg-gray-100 text-gray-700 rounded-2xl hover:bg-gray-200 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            // Check which fields are missing
+                            const missingFields = [];
+                            if (!newRequestData.projectNumber) missingFields.push('Project Number');
+                            if (!newRequestData.country) missingFields.push('Country');
+                            if (!newRequestData.refNumber) missingFields.push('Reference Number');
+                            if (!newRequestData.beneficiaryName) missingFields.push('Beneficiary Name');
+                            if (!newRequestData.amount) missingFields.push('Amount');
+                            if (!newRequestData.valueDate) missingFields.push('Value Date');
+
+                            if (missingFields.length > 0) {
+                              showMessageModal('Validation Error', `Please fill in the following required fields: ${missingFields.join(', ')}`, 'error');
+                              return;
+                            }
+
+                            const newRequest = {
+                              id: requests.length + 1,
+                              ...newRequestData,
+                              amount: parseInt(newRequestData.amount),
+                              status: 'Pending Initial Review',
+                              currentStage: 'initial_review',
+                              assignedTo: Object.values(mockUsers).find(u => u.role === 'operations' && regionMapping[newRequestData.country] === u.region)?.id || 3,
+                              processingDays: 0,
+                              createdAt: new Date().toISOString(),
+                              updatedAt: new Date().toISOString()
+                            };
+                            setRequests(prev => [...prev, newRequest]);
+                            addAuditEntry(newRequest.id, currentUser.id, 'Request created', `Withdrawal request ${newRequest.projectNumber} created via OCR extraction for ${newRequest.beneficiaryName}`);
+                            setShowCreateRequest(false);
+                            setNewRequestData({ projectNumber: '', country: '', refNumber: '', beneficiaryName: '', amount: '', currency: 'USD', valueDate: '', priority: 'medium' });
+                            setOcrResults(null);
+                            showMessageModal('Success', `Request ${newRequest.projectNumber} created successfully and assigned to regional operations team.`, 'success');
+                          }}
+                          className={`px-6 py-3 rounded-2xl transition-all duration-200 ${
+                            newRequestData.projectNumber && newRequestData.country && newRequestData.refNumber && newRequestData.beneficiaryName && newRequestData.amount && newRequestData.valueDate
+                              ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          Create Request
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Request Details Modal */}
+              {showModal && selectedRequest && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
+                  <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl max-w-4xl w-full border border-white/20 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-t-3xl">
+                      <h2 className="text-xl font-bold flex items-center">
+                        <span className="mr-2">👁️</span>
+                        Request Details - #{selectedRequest.projectNumber}
+                      </h2>
+                      <p className="text-blue-100 text-sm mt-1">{selectedRequest.beneficiaryName} • {selectedRequest.country}</p>
+                    </div>
+                    <div className="p-6">
+                      {/* Request Information */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Project Number</label>
+                            <div className="text-lg font-bold text-gray-900">{selectedRequest.projectNumber}</div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Reference Number</label>
+                            <div className="text-lg font-bold text-blue-600">{selectedRequest.refNumber}</div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Beneficiary</label>
+                            <div className="text-lg font-semibold text-gray-900">{selectedRequest.beneficiaryName}</div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Country & Region</label>
+                            <div className="text-lg font-semibold text-gray-900">
+                              {selectedRequest.country} ({regionMapping[selectedRequest.country] || 'Unknown Region'})
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Amount</label>
+                            <div className="text-2xl font-bold text-green-600">
+                              {selectedRequest.amount.toLocaleString()} {selectedRequest.currency}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Value Date</label>
+                            <div className="text-lg font-semibold text-gray-900">
+                              {new Date(selectedRequest.valueDate).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Priority</label>
+                            <span className={`inline-block px-3 py-1 rounded-lg text-sm font-medium ${getPriorityColor(selectedRequest.priority)}`}>
+                              {selectedRequest.priority.toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">Processing Time</label>
+                            <div className="text-lg font-semibold text-gray-900">{selectedRequest.processingDays} days</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Current Status */}
+                      <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
+                        <h3 className="font-bold text-blue-900 mb-2 flex items-center">
+                          <span className="mr-2">{getStatusIcon(selectedRequest.currentStage)}</span>
+                          Current Status: {selectedRequest.currentStage.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </h3>
+                        <p className="text-blue-800">{selectedRequest.status}</p>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-end space-x-4">
+                        <button
+                          onClick={() => setShowModal(false)}
+                          className="px-6 py-3 bg-gray-100 text-gray-700 rounded-2xl hover:bg-gray-200 transition-colors"
+                        >
+                          Close
+                        </button>
+                        {selectedRequest.currentStage === 'technical_review' && currentUser && currentUser.role === 'operations' && (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => {
+                                const now = new Date().toISOString();
+                                setRequests(prev => prev.map(req =>
+                                  req.id === selectedRequest.id
+                                    ? { ...req, status: 'Approved - Sent to Core Banking', currentStage: 'core_banking', assignedTo: 7, updatedAt: now }
+                                    : req
+                                ));
+                                addAuditEntry(selectedRequest.id, currentUser.id, 'Request approved', `Technical review completed successfully, approved by ${currentUser.name}`);
+                                addAuditEntry(selectedRequest.id, 7, 'Moved to Core Banking', `Request forwarded to ${mockUsers.bank001.name} for disbursement processing`);
+                                setShowModal(false);
+                                showMessageModal('Success', `Request #${selectedRequest.projectNumber} approved and moved to Core Banking.`, 'success');
+                              }}
+                              className="px-6 py-3 bg-green-500 text-white rounded-2xl hover:bg-green-600 transition-colors"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => {
+                                const now = new Date().toISOString();
+                                setRequests(prev => prev.map(req =>
+                                  req.id === selectedRequest.id
+                                    ? { ...req, status: 'Rejected by Operations', currentStage: 'initial_review', updatedAt: now }
+                                    : req
+                                ));
+                                addAuditEntry(selectedRequest.id, currentUser.id, 'Request rejected', `Request rejected by ${currentUser.name} and sent back for review`);
+                                setShowModal(false);
+                                showMessageModal('Success', `Request #${selectedRequest.projectNumber} rejected and sent back to Initial Review.`, 'success');
+                              }}
+                              className="px-6 py-3 bg-red-500 text-white rounded-2xl hover:bg-red-600 transition-colors"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                        {selectedRequest.currentStage === 'core_banking' && currentUser && currentUser.role === 'core_banking' && (
+                          <button
+                            onClick={() => {
+                              const now = new Date().toISOString();
+                              setRequests(prev => prev.map(req =>
+                                req.id === selectedRequest.id
+                                  ? { ...req, status: 'Disbursed', currentStage: 'disbursed', updatedAt: now }
+                                  : req
+                              ));
+                              addAuditEntry(selectedRequest.id, currentUser.id, 'Disbursement processed', `Amount ${selectedRequest.amount.toLocaleString()} ${selectedRequest.currency} disbursed to ${selectedRequest.beneficiaryName} by ${currentUser.name}`);
+                              setShowModal(false);
+                              showMessageModal('Success', `Request #${selectedRequest.projectNumber} marked as Disbursed.`, 'success');
+                            }}
+                            className="px-6 py-3 bg-green-500 text-white rounded-2xl hover:bg-green-600 transition-colors"
+                          >
+                            Mark as Disbursed
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Audit Trail Modal */}
+              {showAuditModal && selectedAuditRequest && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowAuditModal(false)}>
+                  <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl max-w-4xl w-full border border-white/20 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-6 rounded-t-3xl">
+                      <h2 className="text-xl font-bold flex items-center">
+                        <span className="mr-2">📋</span>
+                        Audit Trail - #{selectedAuditRequest.projectNumber}
+                      </h2>
+                      <p className="text-purple-100 text-sm mt-1">Complete tracking from creation to disbursement</p>
+                    </div>
+                    <div className="p-6">
+                      {/* Request Summary */}
+                      <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl border border-purple-200">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <h3 className="font-bold text-purple-900 mb-2">Request Summary</h3>
+                            <div className="space-y-1 text-sm">
+                              <div><strong>Project:</strong> {selectedAuditRequest.projectNumber}</div>
+                              <div><strong>Beneficiary:</strong> {selectedAuditRequest.beneficiaryName}</div>
+                              <div><strong>Country:</strong> {selectedAuditRequest.country} ({regionMapping[selectedAuditRequest.country]})</div>
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-purple-900 mb-2">Current Status</h3>
+                            <div className="space-y-1 text-sm">
+                              <div><strong>Stage:</strong> {selectedAuditRequest.currentStage.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                              <div><strong>Amount:</strong> {selectedAuditRequest.amount.toLocaleString()} {selectedAuditRequest.currency}</div>
+                              <div><strong>Processing Days:</strong> {selectedAuditRequest.processingDays} days</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Audit Trail Timeline */}
+                      <div className="space-y-4">
+                        <h3 className="font-bold text-gray-900 mb-4 flex items-center">
+                          <span className="mr-2">🕒</span>
+                          Complete Audit Trail (A to Z Tracking)
+                        </h3>
+                        {auditTrail[selectedAuditRequest.id] && auditTrail[selectedAuditRequest.id].length > 0 ? (
+                          <div className="space-y-3">
+                            {auditTrail[selectedAuditRequest.id].map((entry, index) => (
+                              <div key={entry.id} className="flex items-start space-x-4 p-4 bg-gradient-to-r from-white to-gray-50 rounded-2xl border border-gray-200 hover:shadow-lg transition-all duration-200">
+                                <div className="flex-shrink-0">
+                                  <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-indigo-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+                                    {index + 1}
+                                  </div>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-3 mb-2">
+                                    <span className="text-2xl">{getAuditIcon(entry.action)}</span>
+                                    <h4 className="font-bold text-gray-900">{entry.action}</h4>
+                                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-lg">
+                                      {getUserName(entry.userId)}
+                                    </span>
+                                  </div>
+                                  <p className="text-gray-700 mb-2">{entry.details}</p>
+                                  <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                    <span className="flex items-center">
+                                      <span className="mr-1">🕒</span>
+                                      {formatTimestamp(entry.timestamp)}
+                                    </span>
+                                    <span className="flex items-center">
+                                      <span className="mr-1">👤</span>
+                                      {getUserName(entry.userId)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <span className="text-4xl mb-4 block">📋</span>
+                            <p>No audit trail entries found for this request.</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Summary Statistics */}
+                      {auditTrail[selectedAuditRequest.id] && auditTrail[selectedAuditRequest.id].length > 0 && (
+                        <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200">
+                          <h3 className="font-bold text-green-900 mb-3">📊 Audit Summary</h3>
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-green-800">{auditTrail[selectedAuditRequest.id].length}</div>
+                              <div className="text-green-600">Total Actions</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-green-800">
+                                {new Set(auditTrail[selectedAuditRequest.id].map(entry => entry.userId)).size}
+                              </div>
+                              <div className="text-green-600">Users Involved</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-green-800">{selectedAuditRequest.processingDays}</div>
+                              <div className="text-green-600">Processing Days</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Close Button */}
+                      <div className="flex justify-center mt-6">
+                        <button
+                          onClick={() => setShowAuditModal(false)}
+                          className="px-8 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-2xl hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 shadow-lg"
+                        >
+                          Close Audit Trail
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Message Modal */}
+              {showMessage && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowMessage(false)}>
+                  <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl max-w-sm w-full border border-white/20" onClick={(e) => e.stopPropagation()}>
+                    <div className={`bg-gradient-to-r ${
+                      messageContent.type === 'success' ? 'from-emerald-500 to-green-600' :
+                      messageContent.type === 'error' ? 'from-red-500 to-pink-600' :
+                      messageContent.type === 'warning' ? 'from-amber-500 to-orange-600' :
+                      'from-blue-500 to-indigo-600'
+                    } text-white p-6 rounded-t-3xl`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl mr-3">
+                          {messageContent.type === 'success' ? '✅' :
+                           messageContent.type === 'error' ? '❌' :
+                           messageContent.type === 'warning' ? '⚠️' : 'ℹ️'}
+                        </span>
+                        <h2 className="text-xl font-bold">{messageContent.title}</h2>
+                      </div>
+                      <button
+                        onClick={() => setShowMessage(false)}
+                        className="absolute top-4 right-4 text-white hover:text-gray-200 text-xl"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="p-6">
+                      <p className={`text-center font-medium ${
+                        messageContent.type === 'success' ? 'text-green-800' :
+                        messageContent.type === 'error' ? 'text-red-800' :
+                        messageContent.type === 'warning' ? 'text-amber-800' :
+                        'text-blue-800'
+                      }`}>
+                        {messageContent.message}
+                      </p>
+                      <button
+                        onClick={() => setShowMessage(false)}
+                        className={`w-full mt-4 px-4 py-2 rounded-2xl font-medium transition-colors ${
+                          messageContent.type === 'success' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                          messageContent.type === 'error' ? 'bg-red-100 text-red-800 hover:bg-red-200' :
+                          messageContent.type === 'warning' ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' :
+                          'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                        }`}
+                      >
+                        Got It
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        // Render the app with error handling
+        try {
+          ReactDOM.render(React.createElement(WithdrawalRequestTracker), document.getElementById('root'));
+          console.log('WithdrawalRequestTracker rendered successfully');
+        } catch (error) {
+          console.error('Error rendering main component:', error);
+
+          // Fallback simple component
+          const ErrorFallback = () => {
+            return React.createElement('div', {
+              className: "min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-8"
+            },
+              React.createElement('div', {
+                className: "bg-white rounded-3xl shadow-xl p-8 max-w-md text-center"
+              },
+                React.createElement('h1', {
+                  className: "text-2xl font-bold text-red-600 mb-4"
+                }, '⚠️ Application Error'),
+                React.createElement('p', {
+                  className: "text-gray-700 mb-4"
+                }, 'There was an error loading the application. Please check the console for details.'),
+                React.createElement('pre', {
+                  className: "text-xs text-red-500 bg-red-50 p-3 rounded-lg text-left overflow-auto"
+                }, error.message),
+                React.createElement('button', {
+                  onClick: () => window.location.reload(),
+                  className: "mt-4 bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                }, 'Reload Page')
+              )
+            );
+          };
+
+          ReactDOM.render(React.createElement(ErrorFallback), document.getElementById('root'));
+        }
+    </script>
+</body>
+</html>
