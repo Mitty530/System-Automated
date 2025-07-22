@@ -1,207 +1,46 @@
-# 🚀 Advanced Withdrawal Request Tracker
+# Getting Started with Create React App
 
-A comprehensive, enterprise-level withdrawal request management system built with React, featuring AI-powered OCR simulation, advanced analytics, real-time notifications, and complete audit trail functionality.
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-![System Preview](https://img.shields.io/badge/Status-Live%20Demo-brightgreen)
-![React](https://img.shields.io/badge/React-18.0-blue)
-![License](https://img.shields.io/badge/License-MIT-green)
+## Available Scripts
 
-## 🌟 **Live Demo**
+In the project directory, you can run:
 
-Simply open `index.html` in your browser - no installation required!
+### `npm start`
 
-## ✨ **Key Features**
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
-### 📊 **Interactive Dashboard**
-- Real-time statistics and KPI monitoring
-- Regional operations team overview
-- Live process tracking with visual indicators
-- Role-based access controls for 7 user types
+The page will reload if you make edits.\
+You will also see any lint errors in the console.
 
-### 📈 **Advanced Analytics**
-- Comprehensive KPI cards (Success Rate, Processing Time, SLA Compliance)
-- Regional performance heatmaps with efficiency metrics
-- Interactive process flow diagrams
-- Visual data representations and trend analysis
+### `npm test`
 
-### 🔔 **Smart Notification Center**
-- Real-time alerts with priority levels (Urgent, Approval, Reminder)
-- Interactive notification management (Mark as Read, Dismiss)
-- Notification badges with unread counts
-- Color-coded notification types with timestamps
+Launches the test runner in the interactive watch mode.\
+See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-### 📋 **Complete Audit Trail**
-- A-to-Z tracking from request creation to disbursement
-- Detailed audit entries with user attribution
-- Visual timeline with step-by-step progression
-- Comprehensive audit statistics and summaries
+### `npm run build`
 
-### 🤖 **AI-Powered OCR Simulation**
-- Realistic document processing workflow
-- Automatic data extraction from uploaded documents
-- Smart field mapping and validation
-- Regional auto-assignment based on country
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
 
-### 🛡️ **Role-Based Security**
-- **Archive Team**: Create and upload requests
-- **Operations Teams**: Review and approve/reject requests (4 regional teams)
-- **Core Banking**: Process disbursements
-- **Loan Admin**: Full system oversight and analytics
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
 
-## 🎯 **User Roles & Permissions**
+See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-| Role | Permissions | Region |
-|------|-------------|---------|
-| 👩‍💼 Sarah Archive | Create requests, Upload documents | Global |
-| 👨‍💼 John Administrator | Full system access, Analytics | Global |
-| 👨‍🔧 Ahmed Operations | Approve/Reject requests | North Africa |
-| 👩‍🔧 Fatima Operations | Approve/Reject requests | Central Africa |
-| 👨‍💼 Chen Operations | Approve/Reject requests | South East Asia |
-| 👩‍💼 Amira Operations | Approve/Reject requests | Central Asia |
-| 👩‍💻 Lisa Banking | Process disbursements | Global |
+### `npm run eject`
 
-## 🔄 **Workflow Process**
+**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
 
-```mermaid
-graph LR
-    A[📝 Initial Review] --> B[🔍 Technical Review]
-    B --> C[🏦 Core Banking]
-    C --> D[✅ Disbursed]
-    
-    B -->|Rejected| A
-    C -->|Issues| B
-```
+If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
 
-1. **📝 Initial Review**: Request created via OCR, auto-assigned to regional team
-2. **🔍 Technical Review**: Operations team reviews and approves/rejects
-3. **🏦 Core Banking**: Approved requests sent for disbursement processing
-4. **✅ Disbursed**: Final disbursement completed and recorded
+Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
 
-## 🛠️ **Technical Stack**
+You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
 
-- **Frontend**: React 18 with Hooks
-- **Styling**: Tailwind CSS with Glassmorphism design
-- **State Management**: React useState/useEffect
-- **Build**: No build process required - pure HTML/JS
-- **Deployment**: Static hosting compatible
+## Learn More
 
-## 🚀 **Quick Start**
+You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
-### Option 1: Direct Browser Access
-```bash
-# Clone the repository
-git clone https://github.com/Mitty530/System-Automated.git
-
-# Navigate to the directory
-cd System-Automated
-
-# Open in browser
-open index.html
-```
-
-### Option 2: Local Server (Optional)
-```bash
-# Using Python
-python -m http.server 8000
-
-# Using Node.js
-npx serve .
-
-# Using PHP
-php -S localhost:8000
-```
-
-Then visit `http://localhost:8000`
-
-## 📱 **Browser Compatibility**
-
-- ✅ Chrome 90+
-- ✅ Firefox 88+
-- ✅ Safari 14+
-- ✅ Edge 90+
-
-## 🎨 **Design Features**
-
-- **Glassmorphism UI**: Modern frosted glass effects
-- **Gradient Backgrounds**: Beautiful color transitions
-- **Smooth Animations**: Hover effects and transitions
-- **Responsive Design**: Optimized for desktop use
-- **Emoji Icons**: Intuitive visual indicators
-- **Color-Coded Status**: Easy status identification
-
-## 📊 **Sample Data**
-
-The system comes pre-loaded with realistic sample data:
-- 5 withdrawal requests across different regions
-- Complete audit trail history
-- Regional team assignments
-- Various request statuses and priorities
-
-## 🔧 **Customization**
-
-### Adding New Countries/Regions
-Edit the `regionMapping` object in `index.html`:
-```javascript
-const regionMapping = {
-  'YourCountry': 'Your Region',
-  // ... existing mappings
-};
-```
-
-### Adding New User Roles
-Extend the `mockUsers` object:
-```javascript
-const mockUsers = {
-  'newuser': { 
-    id: 8, 
-    username: 'newuser', 
-    name: 'New User', 
-    role: 'new_role', 
-    avatar: '👤' 
-  }
-};
-```
-
-## 📈 **Analytics Features**
-
-- **Success Rate Tracking**: Monitor completion percentages
-- **Processing Time Analysis**: Average time from creation to disbursement
-- **SLA Compliance**: Track adherence to processing deadlines
-- **Regional Performance**: Compare efficiency across regions
-- **Bottleneck Identification**: Identify workflow constraints
-
-## 🔐 **Security Features**
-
-- Role-based access controls
-- Action-level permissions
-- Audit trail for all operations
-- User attribution for all actions
-- Session-based authentication simulation
-
-## 🤝 **Contributing**
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 **License**
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👨‍💻 **Author**
-
-**Mamadou Oury Diallo**
-- GitHub: [@Mitty530](https://github.com/Mitty530)
-- Email: 58902829+Mitty530@users.noreply.github.com
-
-## 🙏 **Acknowledgments**
-
-- Built with React and Tailwind CSS
-- Inspired by modern financial workflow systems
-- Designed for enterprise-level demonstrations
-
----
-
-⭐ **Star this repository if you found it helpful!**
+To learn React, check out the [React documentation](https://reactjs.org/).
