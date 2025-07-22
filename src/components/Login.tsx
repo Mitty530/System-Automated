@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import logo from '../logo.svg';
 
 interface LoginProps {
@@ -23,6 +24,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setMounted(true);
@@ -650,10 +652,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <button
               type="button"
               className="forgot-password-link"
-              onClick={() => {
-                // For now, show an alert - can be replaced with actual password reset functionality
-                alert('Password reset functionality would be implemented here. Please contact your system administrator for password reset assistance.');
-              }}
+              onClick={() => navigate('/forgot-password')}
             >
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />

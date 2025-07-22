@@ -6,6 +6,7 @@ import FeaturesSection from './components/FeaturesSection';
 import SecuritySection from './components/SecuritySection';
 import Footer from './components/Footer';
 import Login from './components/Login';
+import ForgotPassword from './components/ForgotPassword';
 
 interface User {
   id: string;
@@ -21,6 +22,8 @@ const AppContent: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isLoginPage = location.pathname === '/login';
+  const isForgotPasswordPage = location.pathname === '/forgot-password';
+  const isAuthPage = isLoginPage || isForgotPasswordPage;
   const [user, setUser] = useState<User | null>(null);
 
   const handleLogin = (userData: User) => {
@@ -59,7 +62,7 @@ const AppContent: React.FC = () => {
         <div className="shape shape-3"></div>
       </div>
 
-      {!isLoginPage && <Navigation user={user} onLogout={handleLogout} />}
+      {!isAuthPage && <Navigation user={user} onLogout={handleLogout} />}
       <Routes>
         <Route path="/" element={
           <main>
@@ -69,8 +72,9 @@ const AppContent: React.FC = () => {
           </main>
         } />
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>
-      {!isLoginPage && <Footer />}
+      {!isAuthPage && <Footer />}
     </div>
   );
 };
