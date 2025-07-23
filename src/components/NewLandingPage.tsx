@@ -154,10 +154,7 @@ const NewLandingPage: React.FC = () => {
       <section className="hero-new" id="hero">
         <div className="container-new">
           <div className="hero-content-new">
-            <div className="hero-badge-new">
-              <span>AI-Powered Financial Operations</span>
-            </div>
-            
+
             <h1 className="hero-title-new">
               Transform Fund Disbursement with Intelligent Automation
             </h1>

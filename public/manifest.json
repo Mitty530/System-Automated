@@ -1,6 +1,6 @@
 {
-  "short_name": "ADFI Tracking",
-  "name": "ADFI Tracking System",
+  "short_name": "Quandrox",
+  "name": "Quandrox Tracking System",
   "icons": [
     {
       "src": "favicon.ico",
@@ -10,6 +10,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#6366f1",
+  "background_color": "#0f0f23"
 }
