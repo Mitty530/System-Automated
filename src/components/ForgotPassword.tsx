@@ -24,28 +24,29 @@ const ForgotPassword: React.FC = () => {
     return emailRegex.test(email);
   };
 
-  const validateEmailDomain = (email: string) => {
-    return email.toLowerCase().endsWith('@quandrox.com');
+  const validateEmailDomain = (email: string): boolean => {
+    const adminEmail = 'Mamadouourydiallo819@gmail.com';
+    const allowedDomain = '@adfd.ae';
+
+    // Normalize email for comparison (case-insensitive)
+    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedAdminEmail = adminEmail.toLowerCase();
+
+    // Allow admin email as exception (case-insensitive)
+    if (normalizedEmail === normalizedAdminEmail) {
+      return true;
+    }
+
+    // Check if email ends with allowed domain (case-insensitive)
+    const domainMatch = normalizedEmail.endsWith(allowedDomain.toLowerCase());
+    return domainMatch;
   };
 
   const checkEmailExists = async (email: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', email.toLowerCase())
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error checking email:', error);
-        return false;
-      }
-
-      return !!data;
-    } catch (error) {
-      console.error('Error checking email:', error);
-      return false;
-    }
+    // Since we already validated the domain, we'll allow password reset
+    // for all valid ADFD emails. The actual email existence will be
+    // validated by Supabase's password reset functionality.
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,7 +71,7 @@ const ForgotPassword: React.FC = () => {
     }
 
     if (!validateEmailDomain(email)) {
-      setMessage('Please use your correct email with the @quandrox.com domain.');
+      setMessage('Unauthorized user. Only authorized personnel are allowed to access this system.');
       setMessageType('error');
       setIsLoading(false);
       return;
@@ -79,7 +80,7 @@ const ForgotPassword: React.FC = () => {
     // Check if email exists in our system
     const emailExists = await checkEmailExists(email);
     if (!emailExists) {
-      setMessage('This email address is not registered in our system. Please contact your administrator or use your correct email with the @quandrox.com domain.');
+      setMessage('This email address is not registered in our system. Please contact your administrator.');
       setMessageType('error');
       setIsLoading(false);
       return;
@@ -417,7 +418,7 @@ const ForgotPassword: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="premium-input"
-                  placeholder="your.email@quandrox.com"
+                  placeholder="your.email@adfd.ae"
                 />
               </div>
 
@@ -426,10 +427,10 @@ const ForgotPassword: React.FC = () => {
               {/* Message Display */}
               {message && (
                 <div
-                  className={`p-6 rounded-lg text-sm mb-8 ${
+                  className={`p-6 rounded-lg text-sm mb-8 font-semibold shadow-md ${
                     messageType === 'success'
                       ? 'bg-green-50 text-green-800 border border-green-200'
-                      : 'bg-red-50 text-red-800 border border-red-200'
+                      : 'bg-red-100 text-red-800 border-2 border-red-300'
                   }`}
                   style={{
                     animation: 'fadeInUp 0.3s ease-out'
@@ -438,11 +439,11 @@ const ForgotPassword: React.FC = () => {
                   <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0 mt-0.5">
                       {messageType === 'success' ? (
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
                       ) : (
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
                       )}

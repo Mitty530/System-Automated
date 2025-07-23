@@ -11,18 +11,30 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [mounted, setMounted] = useState(false);
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
+  const { signIn, signOut, user } = useAuth();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      navigate('/');
+  // Don't auto-redirect - let users access login page even if logged in
+
+  const validateEmailDomain = (email: string): boolean => {
+    const adminEmail = 'Mamadouourydiallo819@gmail.com';
+    const allowedDomain = '@adfd.ae';
+
+    // Normalize email for comparison (case-insensitive)
+    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedAdminEmail = adminEmail.toLowerCase();
+
+    // Allow admin email as exception (case-insensitive)
+    if (normalizedEmail === normalizedAdminEmail) {
+      return true;
     }
-  }, [user, navigate]);
+
+    // Check if email ends with allowed domain (case-insensitive)
+    return normalizedEmail.endsWith(allowedDomain.toLowerCase());
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +42,13 @@ const Login: React.FC = () => {
     setError('');
 
     try {
+      // Validate email domain first
+      if (!validateEmailDomain(email)) {
+        setError('Unauthorized user. Only authorized personnel are allowed to access this system.');
+        setIsLoading(false);
+        return;
+      }
+
       console.log('🔄 Authenticating with Supabase...');
 
       const { error: signInError } = await signIn(email, password);
@@ -226,56 +245,7 @@ const Login: React.FC = () => {
           color: #374151;
         }
 
-        /* World-class Forgot Password Link */
-        .forgot-password-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          color: #3b82f6;
-          text-decoration: none;
-          font-weight: 600;
-          font-size: 14px;
-          padding: 12px 20px;
-          border-radius: 12px;
-          background: rgba(59, 130, 246, 0.05);
-          border: 1px solid rgba(59, 130, 246, 0.1);
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
-          overflow: hidden;
-        }
 
-        .forgot-password-link::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
-          transition: left 0.5s;
-        }
-
-        .forgot-password-link:hover::before {
-          left: 100%;
-        }
-
-        .forgot-password-link:hover {
-          color: #1d4ed8;
-          background: rgba(59, 130, 246, 0.1);
-          border-color: rgba(59, 130, 246, 0.2);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 16px rgba(59, 130, 246, 0.2);
-        }
-
-        .forgot-password-link svg {
-          width: 16px;
-          height: 16px;
-          transition: transform 0.3s ease;
-        }
-
-        .forgot-password-link:hover svg {
-          transform: translateX(2px);
-        }
 
         /* Back Button */
         .back-button {
@@ -499,10 +469,57 @@ const Login: React.FC = () => {
             <p className="text-sm text-gray-600 font-medium">Authorized Personnel Only</p>
           </div>
 
+          {/* Already Logged In Message */}
+          {user && (
+            <div className="bg-green-50 border-2 border-green-300 text-green-800 px-4 py-3 rounded-lg text-sm font-semibold mb-4 shadow-md">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold">You're already logged in!</p>
+                  <p className="text-xs mt-1">You can continue to dashboard or logout to login as a different user.</p>
+                </div>
+              </div>
+              <div className="mt-3 flex space-x-3">
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard')}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-green-700 transition-colors"
+                >
+                  Continue to Dashboard
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await signOut();
+                    setEmail('');
+                    setPassword('');
+                    setError('');
+                  }}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-gray-700 transition-colors"
+                >
+                  Logout & Login as Different User
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm font-medium mb-4">
-              {error}
+            <div className="bg-red-100 border-2 border-red-300 text-red-800 px-4 py-3 rounded-lg text-sm font-semibold mb-4 shadow-md">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  {error}
+                </div>
+              </div>
             </div>
           )}
 
@@ -520,7 +537,7 @@ const Login: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="premium-input"
-                placeholder="your.email@quandrox.com"
+                placeholder="Enter your email address"
               />
             </div>
 
@@ -578,19 +595,7 @@ const Login: React.FC = () => {
             </button>
           </form>
 
-          {/* Forgot Password Link */}
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              className="forgot-password-link"
-              onClick={() => navigate('/forgot-password')}
-            >
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-              </svg>
-              Forgot your password?
-            </button>
-          </div>
+
 
 
 
