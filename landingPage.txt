@@ -1,0 +1,2309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abu Dhabi Fund - Enterprise Withdrawal Request Platform | Powered by AI</title>
+    <meta name="description" content="Transform your fund disbursement operations with AI-powered OCR, intelligent automation, and enterprise-grade security. Trusted by leading financial institutions.">
+    
+    <!-- Enhanced icon loading with multiple fallbacks -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', function() {
+            if (typeof lucide === 'undefined') {
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/lucide@latest/dist/umd/lucide.js';
+                script.onload = () => initializeIcons();
+                document.head.appendChild(script);
+            } else {
+                initializeIcons();
+            }
+        });
+    </script>
+    
+    <!-- Enhanced font loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Enhanced color system */
+            --primary-50: #f0f9ff;
+            --primary-100: #e0f2fe;
+            --primary-200: #bae6fd;
+            --primary-300: #7dd3fc;
+            --primary-400: #38bdf8;
+            --primary-500: #0ea5e9;
+            --primary-600: #0284c7;
+            --primary-700: #0369a1;
+            --primary-800: #075985;
+            --primary-900: #0c4a6e;
+            --primary-950: #082f49;
+            
+            /* Modern gradient system */
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-accent: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --gradient-success: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --gradient-warning: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --gradient-danger: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            
+            /* Enhanced surface system */
+            --surface-primary: rgba(255, 255, 255, 0.1);
+            --surface-secondary: rgba(255, 255, 255, 0.05);
+            --surface-glass: rgba(255, 255, 255, 0.08);
+            --surface-glass-hover: rgba(255, 255, 255, 0.15);
+            --surface-glass-active: rgba(255, 255, 255, 0.2);
+            
+            /* Typography scale */
+            --text-xs: 0.75rem;
+            --text-sm: 0.875rem;
+            --text-base: 1rem;
+            --text-lg: 1.125rem;
+            --text-xl: 1.25rem;
+            --text-2xl: 1.5rem;
+            --text-3xl: 1.875rem;
+            --text-4xl: 2.25rem;
+            --text-5xl: 3rem;
+            --text-6xl: 3.75rem;
+            --text-7xl: 4.5rem;
+            --text-8xl: 6rem;
+            --text-9xl: 8rem;
+            
+            /* Spacing system */
+            --space-1: 0.25rem;
+            --space-2: 0.5rem;
+            --space-3: 0.75rem;
+            --space-4: 1rem;
+            --space-5: 1.25rem;
+            --space-6: 1.5rem;
+            --space-8: 2rem;
+            --space-10: 2.5rem;
+            --space-12: 3rem;
+            --space-16: 4rem;
+            --space-20: 5rem;
+            --space-24: 6rem;
+            --space-32: 8rem;
+            
+            /* Modern shadow system */
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+            --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+            
+            /* Animation variables */
+            --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+            --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+            
+            /* Theme colors */
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --text-muted: #737373;
+            --border-subtle: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            overflow-x: hidden;
+            background: var(--bg-primary);
+            cursor: none;
+        }
+
+        /* Custom cursor */
+        .cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--gradient-accent);
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.1s ease;
+            mix-blend-mode: difference;
+        }
+
+        .cursor-follower {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            pointer-events: none;
+            z-index: 9998;
+            transition: all 0.3s var(--ease-out-expo);
+        }
+
+        .cursor.expand {
+            transform: scale(2);
+        }
+
+        /* Enhanced background system */
+        .hero-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+            z-index: -10;
+        }
+
+        .hero-background::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 60%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.2) 0%, transparent 50%);
+            animation: breathe 8s ease-in-out infinite;
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        /* Dynamic particles system */
+        .particles-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -5;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--gradient-accent);
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(-100px) translateX(100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Enhanced navigation */
+        .navigation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 15, 35, 0.8);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--border-subtle);
+            z-index: 1000;
+            transition: all 0.4s var(--ease-out-expo);
+        }
+
+        .navigation.scrolled {
+            background: rgba(15, 15, 35, 0.95);
+            box-shadow: var(--shadow-xl);
+            transform: translateY(0);
+        }
+
+        .navigation.hidden {
+            transform: translateY(-100%);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 var(--space-8);
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-6) 0;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: transform 0.3s var(--ease-out-expo);
+        }
+
+        .brand:hover {
+            transform: scale(1.05);
+        }
+
+        .brand-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--gradient-primary);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-icon::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.2) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .brand:hover .brand-icon::before {
+            transform: translateX(100%);
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-name {
+            font-size: var(--text-xl);
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .brand-tagline {
+            font-size: var(--text-xs);
+            opacity: 0.7;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: var(--space-8);
+            list-style: none;
+        }
+
+        .nav-menu a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: var(--text-sm);
+            transition: all 0.3s var(--ease-out-expo);
+            position: relative;
+            padding: var(--space-2) 0;
+        }
+
+        .nav-menu a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--gradient-accent);
+            transition: width 0.3s var(--ease-out-expo);
+        }
+
+        .nav-menu a:hover {
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+
+        .nav-menu a:hover::after {
+            width: 100%;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: var(--space-4);
+            align-items: center;
+        }
+
+        .btn-nav {
+            padding: var(--space-3) var(--space-6);
+            border-radius: 16px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: var(--text-sm);
+            transition: all 0.3s var(--ease-out-expo);
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-nav::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .btn-nav:hover::before {
+            transform: translateX(100%);
+        }
+
+        .btn-nav.secondary {
+            color: rgba(255, 255, 255, 0.9);
+            border: 1px solid var(--border-subtle);
+            background: var(--surface-glass);
+        }
+
+        .btn-nav.secondary:hover {
+            background: var(--surface-glass-hover);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-nav.primary {
+            background: var(--gradient-primary);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-nav.primary:hover {
+            box-shadow: var(--shadow-xl);
+            transform: translateY(-2px) scale(1.05);
+        }
+
+        /* Revolutionary hero section */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            z-index: 1;
+            position: relative;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            background: var(--surface-glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            padding: var(--space-3) var(--space-6);
+            border-radius: 50px;
+            font-size: var(--text-sm);
+            font-weight: 600;
+            margin-bottom: var(--space-8);
+            animation: fadeInUp 0.8s var(--ease-out-expo) 0.2s both;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-badge::before {
+            content: '';
+            position: absolute;
+            left: var(--space-4);
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background: var(--gradient-success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .hero-badge::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.8s ease;
+        }
+
+        .hero-badge:hover::after {
+            transform: translateX(100%);
+        }
+
+        .hero-title {
+            font-size: clamp(var(--text-4xl), 8vw, var(--text-8xl));
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: var(--space-6);
+            background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 30%, #cbd5e1 60%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 0.8s var(--ease-out-expo) 0.4s both;
+            position: relative;
+        }
+
+        .hero-title::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.1) 50%, transparent 60%);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .hero-subtitle {
+            font-size: var(--text-xl);
+            line-height: 1.7;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: var(--space-10);
+            font-weight: 400;
+            animation: fadeInUp 0.8s var(--ease-out-expo) 0.6s both;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: var(--space-6);
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: var(--space-16);
+            animation: fadeInUp 0.8s var(--ease-out-expo) 0.8s both;
+        }
+
+        .btn-hero {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-5) var(--space-8);
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: var(--text-lg);
+            transition: all 0.4s var(--ease-out-expo);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+            min-width: 200px;
+            justify-content: center;
+        }
+
+        .btn-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.2) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .btn-hero:hover::before {
+            transform: translateX(100%);
+        }
+
+        .btn-hero.primary {
+            background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+            color: var(--bg-primary);
+            box-shadow: var(--shadow-2xl);
+        }
+
+        .btn-hero.primary:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 32px 64px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-hero.secondary {
+            background: var(--surface-glass);
+            color: var(--text-primary);
+            border-color: var(--border-subtle);
+            backdrop-filter: blur(16px);
+        }
+
+        .btn-hero.secondary:hover {
+            background: var(--surface-glass-hover);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: var(--shadow-xl);
+        }
+
+        /* Dynamic stats with enhanced animations */
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-8);
+            max-width: 900px;
+            margin: 0 auto;
+            animation: fadeInUp 0.8s var(--ease-out-expo) 1s both;
+        }
+
+        .hero-stat {
+            text-align: center;
+            position: relative;
+            background: var(--surface-glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
+            padding: var(--space-6);
+            transition: all 0.4s var(--ease-out-expo);
+        }
+
+        .hero-stat:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: var(--shadow-xl);
+            background: var(--surface-glass-hover);
+        }
+
+        .hero-stat-number {
+            display: block;
+            font-size: var(--text-4xl);
+            font-weight: 900;
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-2);
+            position: relative;
+        }
+
+        .hero-stat-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 600;
+            font-size: var(--text-sm);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Revolutionary sections */
+        .section {
+            position: relative;
+            padding: var(--space-32) 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.02) 50%, transparent 100%);
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto var(--space-20);
+        }
+
+        .section-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            background: var(--surface-glass);
+            color: var(--text-primary);
+            padding: var(--space-2) var(--space-5);
+            border-radius: 50px;
+            font-size: var(--text-sm);
+            font-weight: 600;
+            margin-bottom: var(--space-6);
+            border: 1px solid var(--border-subtle);
+            backdrop-filter: blur(16px);
+        }
+
+        .section-title {
+            font-size: clamp(var(--text-3xl), 5vw, var(--text-6xl));
+            font-weight: 900;
+            line-height: 1.2;
+            color: var(--text-primary);
+            margin-bottom: var(--space-6);
+            background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-description {
+            font-size: var(--text-xl);
+            color: var(--text-secondary);
+            line-height: 1.7;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Enhanced feature cards */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: var(--space-8);
+        }
+
+        .feature-card {
+            background: var(--surface-glass);
+            backdrop-filter: blur(24px);
+            border-radius: 32px;
+            padding: var(--space-10);
+            border: 1px solid var(--border-subtle);
+            transition: all 0.5s var(--ease-out-expo);
+            position: relative;
+            overflow: hidden;
+            transform: translateY(0);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+        }
+
+        .feature-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.05) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.8s ease;
+        }
+
+        .feature-card:hover::after {
+            transform: translateX(100%);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-12px) scale(1.02);
+            box-shadow: var(--shadow-2xl);
+            background: var(--surface-glass-hover);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--space-6);
+            color: var(--text-primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-icon::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: inherit;
+            opacity: 0.1;
+            transform: scale(1.5);
+            border-radius: 50%;
+            filter: blur(20px);
+        }
+
+        .feature-title {
+            font-size: var(--text-2xl);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-4);
+            line-height: 1.3;
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: var(--text-base);
+            margin-bottom: var(--space-6);
+        }
+
+        .feature-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: var(--text-sm);
+            text-decoration: none;
+            transition: all 0.3s var(--ease-out-expo);
+            position: relative;
+        }
+
+        .feature-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--gradient-accent);
+            transition: width 0.3s var(--ease-out-expo);
+        }
+
+        .feature-link:hover {
+            transform: translateX(8px);
+        }
+
+        .feature-link:hover::after {
+            width: calc(100% - 30px);
+        }
+
+        /* Modern process section */
+        .process {
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .process::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+        }
+
+        .process-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-8);
+            margin-top: var(--space-20);
+        }
+
+        .process-step {
+            background: var(--surface-glass);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 32px;
+            padding: var(--space-10);
+            text-align: center;
+            position: relative;
+            transition: all 0.5s var(--ease-out-expo);
+            overflow: hidden;
+        }
+
+        .process-step::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.03) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.8s ease;
+        }
+
+        .process-step:hover::before {
+            transform: translateX(100%);
+        }
+
+        .process-step:hover {
+            transform: translateY(-12px) scale(1.02);
+            background: var(--surface-glass-hover);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .step-number {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-3xl);
+            font-weight: 900;
+            margin: 0 auto var(--space-6);
+            box-shadow: var(--shadow-xl);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-number::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .process-step:hover .step-number::before {
+            transform: translateX(100%);
+        }
+
+        .step-title {
+            font-size: var(--text-xl);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-4);
+        }
+
+        .step-description {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: var(--text-base);
+        }
+
+        /* Revolutionary platform section */
+        .platform-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-20);
+            align-items: center;
+        }
+
+        .platform-visual {
+            position: relative;
+            background: var(--surface-glass);
+            backdrop-filter: blur(24px);
+            border-radius: 32px;
+            padding: var(--space-8);
+            border: 1px solid var(--border-subtle);
+            overflow: hidden;
+        }
+
+        .platform-visual::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.05) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 1s ease;
+        }
+
+        .platform-visual:hover::before {
+            transform: translateX(100%);
+        }
+
+        .platform-mockup {
+            background: var(--gradient-primary);
+            border-radius: 24px;
+            padding: var(--space-8);
+            color: var(--text-primary);
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .mockup-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+            padding-bottom: var(--space-4);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .mockup-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--gradient-success);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-xl);
+            box-shadow: var(--shadow-md);
+        }
+
+        .mockup-user {
+            flex: 1;
+        }
+
+        .mockup-name {
+            font-weight: 600;
+            margin-bottom: var(--space-1);
+            font-size: var(--text-base);
+        }
+
+        .mockup-role {
+            font-size: var(--text-sm);
+            opacity: 0.7;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .mockup-status {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            padding: var(--space-2) var(--space-4);
+            border-radius: 50px;
+            font-size: var(--text-xs);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--space-1);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .mockup-content {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-4);
+        }
+
+        .mockup-stat {
+            text-align: center;
+            padding: var(--space-5);
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            transition: all 0.3s var(--ease-out-expo);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .mockup-stat:hover {
+            transform: scale(1.05) rotate(1deg);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .mockup-stat-number {
+            font-size: var(--text-2xl);
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .mockup-stat-label {
+            font-size: var(--text-xs);
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .platform-content h3 {
+            font-size: var(--text-4xl);
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: var(--space-6);
+            line-height: 1.2;
+        }
+
+        .platform-features {
+            list-style: none;
+            margin: var(--space-8) 0;
+        }
+
+        .platform-features li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-4);
+            font-size: var(--text-lg);
+            transition: all 0.3s var(--ease-out-expo);
+            padding: var(--space-2) 0;
+        }
+
+        .platform-features li:hover {
+            color: var(--text-primary);
+            transform: translateX(8px);
+        }
+
+        .platform-features li::before {
+            content: '✓';
+            color: #10b981;
+            font-weight: 700;
+            font-size: var(--text-xl);
+            width: 24px;
+            height: 24px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* Security cards with glassmorphism */
+        .security-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: var(--space-8);
+            margin-top: var(--space-16);
+        }
+
+        .security-card {
+            background: var(--surface-glass);
+            backdrop-filter: blur(24px);
+            border-radius: 24px;
+            padding: var(--space-8);
+            border: 1px solid var(--border-subtle);
+            transition: all 0.4s var(--ease-out-expo);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .security-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.03) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.8s ease;
+        }
+
+        .security-card:hover::before {
+            transform: translateX(100%);
+        }
+
+        .security-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: var(--shadow-xl);
+            background: var(--surface-glass-hover);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .security-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 20px;
+            background: var(--gradient-success);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--space-6);
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .security-icon::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .security-card:hover .security-icon::before {
+            transform: translateX(100%);
+        }
+
+        .security-card h4 {
+            font-size: var(--text-xl);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-4);
+        }
+
+        .security-card p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: var(--text-base);
+        }
+
+        /* Enhanced CTA section */
+        .cta {
+            background: var(--gradient-primary);
+            padding: var(--space-32) 0;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 60%),
+                radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .cta h2 {
+            font-size: clamp(var(--text-4xl), 6vw, var(--text-7xl));
+            font-weight: 900;
+            color: var(--text-primary);
+            margin-bottom: var(--space-6);
+            line-height: 1.2;
+        }
+
+        .cta p {
+            font-size: var(--text-xl);
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: var(--space-10);
+            line-height: 1.7;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-actions {
+            display: flex;
+            gap: var(--space-6);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Enhanced footer */
+        .footer {
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            padding: var(--space-24) 0 var(--space-8);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: var(--space-20);
+            margin-bottom: var(--space-16);
+        }
+
+        .footer-brand {
+            max-width: 400px;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+
+        .footer-logo-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--gradient-primary);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-md);
+        }
+
+        .footer-description {
+            line-height: 1.7;
+            margin-bottom: var(--space-6);
+            font-size: var(--text-base);
+        }
+
+        .footer-social {
+            display: flex;
+            gap: var(--space-4);
+        }
+
+        .social-link {
+            width: 48px;
+            height: 48px;
+            background: var(--surface-glass);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s var(--ease-out-expo);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .social-link:hover {
+            background: var(--surface-glass-hover);
+            color: var(--text-primary);
+            transform: translateY(-4px) scale(1.1);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .footer-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-10);
+        }
+
+        .footer-section h4 {
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: var(--text-lg);
+            margin-bottom: var(--space-5);
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section li {
+            margin-bottom: var(--space-3);
+        }
+
+        .footer-section a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s var(--ease-out-expo);
+            font-size: var(--text-sm);
+        }
+
+        .footer-section a:hover {
+            color: var(--text-primary);
+            transform: translateX(4px);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid var(--border-subtle);
+            padding-top: var(--space-8);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: var(--space-4);
+        }
+
+        .footer-copyright {
+            color: var(--text-muted);
+            font-size: var(--text-sm);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: var(--space-6);
+            list-style: none;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: var(--text-sm);
+            transition: color 0.3s var(--ease-out-expo);
+        }
+
+        .footer-links a:hover {
+            color: var(--text-primary);
+        }
+
+        /* Animation classes */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(60px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(0.95);
+            }
+        }
+
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(60px);
+            transition: all 0.8s var(--ease-out-expo);
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .animate-on-scroll.fade-left {
+            transform: translateX(-60px);
+        }
+
+        .animate-on-scroll.fade-left.visible {
+            transform: translateX(0);
+        }
+
+        .animate-on-scroll.fade-right {
+            transform: translateX(60px);
+        }
+
+        .animate-on-scroll.fade-right.visible {
+            transform: translateX(0);
+        }
+
+        .animate-on-scroll.scale-in {
+            transform: scale(0.8);
+        }
+
+        .animate-on-scroll.scale-in.visible {
+            transform: scale(1);
+        }
+
+        /* Enhanced responsive design */
+        @media (max-width: 1024px) {
+            .platform-grid {
+                grid-template-columns: 1fr;
+                gap: var(--space-16);
+            }
+            
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: var(--space-16);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--space-6);
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .hero {
+                min-height: 90vh;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-hero {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .features-grid,
+            .security-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .process-steps {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .hero-stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: var(--space-4);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .mockup-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Accessibility and reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+            
+            .particle {
+                animation: none;
+            }
+            
+            .hero-background::before {
+                animation: none;
+            }
+        }
+
+        @media (prefers-contrast: high) {
+            .feature-card,
+            .security-card,
+            .process-step {
+                border: 2px solid currentColor;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .navigation,
+            .cursor,
+            .cursor-follower,
+            .particles-container {
+                display: none;
+            }
+            
+            .hero-background {
+                background: white;
+            }
+            
+            body {
+                background: white;
+                color: black;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Custom cursor -->
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+    
+    <!-- Particles container -->
+    <div class="particles-container" id="particles"></div>
+    
+    <!-- Dynamic background -->
+    <div class="hero-background"></div>
+
+    <!-- Enhanced Navigation -->
+    <nav class="navigation" id="navigation">
+        <div class="container">
+            <div class="nav-container">
+                <a href="#" class="brand">
+                    <div class="brand-icon">
+                        <i data-lucide="building-2"></i>
+                    </div>
+                    <div class="brand-text">
+                        <div class="brand-name">Abu Dhabi Fund</div>
+                        <div class="brand-tagline">Enterprise Platform</div>
+                    </div>
+                </a>
+                
+                <ul class="nav-menu">
+                    <li><a href="#platform">Platform</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#security">Security</a></li>
+                    <li><a href="#enterprise">Enterprise</a></li>
+                </ul>
+                
+                <div class="nav-actions">
+                    <a href="#contact" class="btn-nav secondary">Contact Sales</a>
+                    <a href="#start" class="btn-nav primary">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Revolutionary Hero Section -->
+    <section class="hero" id="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span>AI-Powered Financial Operations</span>
+                </div>
+                
+                <h1 class="hero-title">
+                    Transform Fund Disbursement with Intelligent Automation
+                </h1>
+                
+                <p class="hero-subtitle">
+                    Enterprise-grade withdrawal request platform powered by AI-driven OCR, regional intelligence, and bank-level security. Trusted by leading financial institutions worldwide.
+                </p>
+                
+                <div class="hero-actions">
+                    <a href="#start" class="btn-hero primary">
+                        <i data-lucide="rocket"></i>
+                        Start Free Enterprise Trial
+                    </a>
+                    <a href="#platform" class="btn-hero secondary">
+                        <i data-lucide="play-circle"></i>
+                        See Platform in Action
+                    </a>
+                </div>
+                
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <span class="hero-stat-number" data-target="99.9">0</span>
+                        <span class="hero-stat-label">Accuracy Rate</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-number" data-target="85">0</span>
+                        <span class="hero-stat-label">Faster Processing</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-number" data-target="24">0</span>
+                        <span class="hero-stat-label">Hour Monitoring</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-number" data-target="100">0</span>
+                        <span class="hero-stat-label">Uptime SLA</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Features Section -->
+    <section id="features" class="section">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <div class="section-badge">
+                    <i data-lucide="zap"></i>
+                    Powerful Features
+                </div>
+                <h2 class="section-title">Built for Enterprise Financial Operations</h2>
+                <p class="section-description">
+                    Advanced AI capabilities, intelligent automation, and enterprise-grade security designed for the most demanding financial institutions.
+                </p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon" style="background: var(--gradient-primary);">
+                        <i data-lucide="scan-text"></i>
+                    </div>
+                    <h3 class="feature-title">AI-Powered OCR Intelligence</h3>
+                    <p class="feature-description">
+                        Advanced neural networks trained on Arabic and English financial documents achieve 99.9% extraction accuracy. Automatically reads, validates, and processes withdrawal requests in milliseconds.
+                    </p>
+                    <a href="#" class="feature-link">
+                        Learn more <i data-lucide="arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon" style="background: var(--gradient-success);">
+                        <i data-lucide="map-pin"></i>
+                    </div>
+                    <h3 class="feature-title">Intelligent Regional Routing</h3>
+                    <p class="feature-description">
+                        Smart geographic assignment automatically routes requests to specialized regional teams across North Africa, Central Africa, Southeast Asia, and Central Asia for optimal processing efficiency.
+                    </p>
+                    <a href="#" class="feature-link">
+                        Learn more <i data-lucide="arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon" style="background: var(--gradient-warning);">
+                        <i data-lucide="shield-check"></i>
+                    </div>
+                    <h3 class="feature-title">Zero-Exception Security Model</h3>
+                    <p class="feature-description">
+                        Military-grade role-based access controls with immutable permissions. Archive creates, Operations approves, Core Banking disburses - zero privilege escalation allowed.
+                    </p>
+                    <a href="#" class="feature-link">
+                        Learn more <i data-lucide="arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon" style="background: var(--gradient-secondary);">
+                        <i data-lucide="activity"></i>
+                    </div>
+                    <h3 class="feature-title">Real-Time Process Intelligence</h3>
+                    <p class="feature-description">
+                        Live tracking with predictive analytics, automated bottleneck detection, and intelligent priority routing. Complete audit trails with regulatory compliance built-in.
+                    </p>
+                    <a href="#" class="feature-link">
+                        Learn more <i data-lucide="arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon" style="background: var(--gradient-danger);">
+                        <i data-lucide="zap"></i>
+                    </div>
+                    <h3 class="feature-title">Intelligent Alert System</h3>
+                    <p class="feature-description">
+                        ML-powered priority detection with automated escalation. Urgent disbursements get immediate attention with smart notifications and visual indicators.
+                    </p>
+                    <a href="#" class="feature-link">
+                        Learn more <i data-lucide="arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="feature-card animate-on-scroll">
+                    <div class="feature-icon" style="background: var(--gradient-accent);">
+                        <i data-lucide="search"></i>
+                    </div>
+                    <h3 class="feature-title">Advanced Analytics Engine</h3>
+                    <p class="feature-description">
+                        Multi-dimensional search, predictive insights, and performance analytics. Custom dashboards and automated reporting for data-driven decision making.
+                    </p>
+                    <a href="#" class="feature-link">
+                        Learn more <i data-lucide="arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Revolutionary Process Section -->
+    <section class="process section">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <div class="section-badge">
+                    <i data-lucide="workflow"></i>
+                    Intelligent Workflow
+                </div>
+                <h2 class="section-title">Streamlined 4-Stage Process</h2>
+                <p class="section-description">
+                    Every request follows an optimized workflow designed for maximum efficiency, security, and compliance.
+                </p>
+            </div>
+            
+            <div class="process-steps">
+                <div class="process-step animate-on-scroll">
+                    <div class="step-number">1</div>
+                    <h4 class="step-title">Intelligent Creation</h4>
+                    <p class="step-description">
+                        Archive team uploads documents. AI-powered OCR extracts all data with 99.9% accuracy and automatically assigns to regional specialists.
+                    </p>
+                </div>
+                
+                <div class="process-step animate-on-scroll">
+                    <div class="step-number">2</div>
+                    <h4 class="step-title">Expert Technical Review</h4>
+                    <p class="step-description">
+                        Regional operations teams with specialized knowledge evaluate technical requirements and compliance within their geographic expertise.
+                    </p>
+                </div>
+                
+                <div class="process-step animate-on-scroll">
+                    <div class="step-number">3</div>
+                    <h4 class="step-title">Secure Banking Process</h4>
+                    <p class="step-description">
+                        Approved requests automatically flow to core banking team for final disbursement with multi-layer security validation and audit logging.
+                    </p>
+                </div>
+                
+                <div class="process-step animate-on-scroll">
+                    <div class="step-number">4</div>
+                    <h4 class="step-title">Completion & Tracking</h4>
+                    <p class="step-description">
+                        Real-time status updates, stakeholder notifications, and complete audit trail ensure transparency and regulatory compliance.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Revolutionary Platform Section -->
+    <section id="platform" class="section">
+        <div class="container">
+            <div class="platform-grid">
+                <div class="platform-visual animate-on-scroll fade-right">
+                    <div class="platform-mockup">
+                        <div class="mockup-header">
+                            <div class="mockup-avatar">👩‍💻</div>
+                            <div class="mockup-user">
+                                <div class="mockup-name">Lisa Banking</div>
+                                <div class="mockup-role">Core Banking Team</div>
+                            </div>
+                            <div class="mockup-status">
+                                <i data-lucide="check-circle"></i>
+                                Active Session
+                            </div>
+                        </div>
+                        <div class="mockup-content">
+                            <div class="mockup-stat">
+                                <div class="mockup-stat-number">12</div>
+                                <div class="mockup-stat-label">Pending Disbursements</div>
+                            </div>
+                            <div class="mockup-stat">
+                                <div class="mockup-stat-number">$2.4M</div>
+                                <div class="mockup-stat-label">Total Amount Ready</div>
+                            </div>
+                            <div class="mockup-stat">
+                                <div class="mockup-stat-number">4</div>
+                                <div class="mockup-stat-label">Urgent Priority</div>
+                            </div>
+                            <div class="mockup-stat">
+                                <div class="mockup-stat-number">98%</div>
+                                <div class="mockup-stat-label">SLA Compliance</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="platform-content animate-on-scroll fade-left">
+                    <h3>Real-Time Operations Dashboard</h3>
+                    <p class="section-description">
+                        Experience unparalleled visibility into your fund disbursement operations with intelligent dashboards, predictive analytics, and automated insights.
+                    </p>
+                    
+                    <ul class="platform-features">
+                        <li>Live request tracking with predictive completion times</li>
+                        <li>Intelligent priority scoring and automated escalation</li>
+                        <li>Regional performance analytics and optimization</li>
+                        <li>Automated compliance reporting and audit trails</li>
+                        <li>Custom KPI dashboards for executive oversight</li>
+                        <li>Mobile-first design for on-the-go management</li>
+                    </ul>
+                    
+                    <a href="#start" class="btn-hero primary">
+                        <i data-lucide="arrow-right"></i>
+                        Explore Platform
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Security Section -->
+    <section id="security" class="section">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <div class="section-badge">
+                    <i data-lucide="shield"></i>
+                    Enterprise Security
+                </div>
+                <h2 class="section-title">Bank-Level Security & Compliance</h2>
+                <p class="section-description">
+                    Built with security-first architecture meeting international banking standards and regulatory requirements.
+                </p>
+            </div>
+            
+            <div class="security-grid">
+                <div class="security-card animate-on-scroll scale-in">
+                    <div class="security-icon">
+                        <i data-lucide="lock"></i>
+                    </div>
+                    <h4>End-to-End Encryption</h4>
+                    <p>AES-256 encryption for data at rest and in transit. Zero-knowledge architecture ensures your sensitive financial data remains completely private.</p>
+                </div>
+                
+                <div class="security-card animate-on-scroll scale-in">
+                    <div class="security-icon">
+                        <i data-lucide="shield-check"></i>
+                    </div>
+                    <h4>Multi-Factor Authentication</h4>
+                    <p>Advanced authentication including biometric verification, hardware tokens, and adaptive risk assessment for bulletproof access control.</p>
+                </div>
+                
+                <div class="security-card animate-on-scroll scale-in">
+                    <div class="security-icon">
+                        <i data-lucide="eye"></i>
+                    </div>
+                    <h4>Complete Audit Logging</h4>
+                    <p>Immutable audit trails capture every action, access, and change with tamper-proof timestamps meeting regulatory compliance standards.</p>
+                </div>
+                
+                <div class="security-card animate-on-scroll scale-in">
+                    <div class="security-icon">
+                        <i data-lucide="server"></i>
+                    </div>
+                    <h4>SOC 2 Type II Certified</h4>
+                    <p>Annual third-party security audits and certifications including SOC 2 Type II, ISO 27001, and PCI DSS compliance validation.</p>
+                </div>
+                
+                <div class="security-card animate-on-scroll scale-in">
+                    <div class="security-icon">
+                        <i data-lucide="globe"></i>
+                    </div>
+                    <h4>Geographic Data Sovereignty</h4>
+                    <p>Data residency controls ensure compliance with local regulations. Choose where your data lives and maintain full jurisdictional control.</p>
+                </div>
+                
+                <div class="security-card animate-on-scroll scale-in">
+                    <div class="security-icon">
+                        <i data-lucide="users"></i>
+                    </div>
+                    <h4>Role-Based Access Control</h4>
+                    <p>Granular permissions with principle of least privilege. Zero-exception security model prevents unauthorized access or privilege escalation.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced CTA Section -->
+    <section id="start" class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2 class="animate-on-scroll">Ready to Transform Your Operations?</h2>
+                <p class="animate-on-scroll">
+                    Join leading financial institutions who've revolutionized their disbursement operations with our enterprise platform.
+                </p>
+                <div class="cta-actions animate-on-scroll">
+                    <a href="#" class="btn-hero primary">
+                        <i data-lucide="rocket"></i>
+                        Start Free 30-Day Trial
+                    </a>
+                    <a href="#" class="btn-hero secondary">
+                        <i data-lucide="calendar"></i>
+                        Schedule Enterprise Demo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enhanced Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <div class="footer-logo-icon">
+                            <i data-lucide="building-2"></i>
+                        </div>
+                        <div class="brand-text">
+                            <div class="brand-name" style="color: var(--text-primary);">Abu Dhabi Fund</div>
+                            <div class="brand-tagline">Enterprise Platform</div>
+                        </div>
+                    </div>
+                    <p class="footer-description">
+                        Empowering the world's leading financial institutions with intelligent automation, enterprise security, and unparalleled operational efficiency.
+                    </p>
+                    <div class="footer-social">
+                        <a href="#" class="social-link">
+                            <i data-lucide="linkedin"></i>
+                        </a>
+                        <a href="#" class="social-link">
+                            <i data-lucide="twitter"></i>
+                        </a>
+                        <a href="#" class="social-link">
+                            <i data-lucide="github"></i>
+                        </a>
+                        <a href="#" class="social-link">
+                            <i data-lucide="mail"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="footer-sections">
+                    <div class="footer-section">
+                        <h4>Platform</h4>
+                        <ul>
+                            <li><a href="#">Features</a></li>
+                            <li><a href="#">Security</a></li>
+                            <li><a href="#">Integrations</a></li>
+                            <li><a href="#">API Documentation</a></li>
+                            <li><a href="#">System Status</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer-section">
+                        <h4>Solutions</h4>
+                        <ul>
+                            <li><a href="#">Enterprise</a></li>
+                            <li><a href="#">Banking & Finance</a></li>
+                            <li><a href="#">Government</a></li>
+                            <li><a href="#">Regional Operations</a></li>
+                            <li><a href="#">Compliance</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer-section">
+                        <h4>Resources</h4>
+                        <ul>
+                            <li><a href="#">Documentation</a></li>
+                            <li><a href="#">Training Center</a></li>
+                            <li><a href="#">Best Practices</a></li>
+                            <li><a href="#">Case Studies</a></li>
+                            <li><a href="#">Webinars</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer-section">
+                        <h4>Support</h4>
+                        <ul>
+                            <li><a href="#">Help Center</a></li>
+                            <li><a href="#">Contact Support</a></li>
+                            <li><a href="#">Professional Services</a></li>
+                            <li><a href="#">System Health</a></li>
+                            <li><a href="#">Community</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer-section">
+                        <h4>Company</h4>
+                        <ul>
+                            <li><a href="#">About Us</a></li>
+                            <li><a href="#">Careers</a></li>
+                            <li><a href="#">Press Kit</a></li>
+                            <li><a href="#">Partners</a></li>
+                            <li><a href="#">Investors</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <div class="footer-copyright">
+                    &copy; 2025 Abu Dhabi Fund Enterprise Platform. All rights reserved.
+                </div>
+                <ul class="footer-links">
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                    <li><a href="#">Security</a></li>
+                    <li><a href="#">Compliance</a></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize application
+        function initializeApp() {
+            initializeIcons();
+            setupCursor();
+            setupParticles();
+            setupAnimations();
+            setupInteractions();
+            setupScrollEffects();
+            initializeStats();
+        }
+
+        // Initialize icons with enhanced fallback
+        function initializeIcons() {
+            try {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                } else {
+                    const fallbackIcons = {
+                        'building-2': '🏢', 'rocket': '🚀', 'play-circle': '▶️', 'zap': '⚡',
+                        'scan-text': '📄', 'map-pin': '📍', 'shield-check': '🛡️', 'activity': '📊',
+                        'search': '🔍', 'workflow': '⚙️', 'shield': '🔒', 'lock': '🔐',
+                        'eye': '👁️', 'server': '💾', 'globe': '🌐', 'users': '👥',
+                        'arrow-right': '→', 'check-circle': '✅', 'calendar': '📅',
+                        'linkedin': '💼', 'twitter': '🐦', 'github': '🔧', 'mail': '✉️'
+                    };
+                    
+                    document.querySelectorAll('[data-lucide]').forEach(el => {
+                        const iconName = el.getAttribute('data-lucide');
+                        el.innerHTML = fallbackIcons[iconName] || '•';
+                    });
+                }
+            } catch (error) {
+                console.warn('Error initializing icons:', error);
+            }
+        }
+
+        // Custom cursor system
+        function setupCursor() {
+            const cursor = document.querySelector('.cursor');
+            const cursorFollower = document.querySelector('.cursor-follower');
+            let mouseX = 0, mouseY = 0;
+            let followerX = 0, followerY = 0;
+
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                
+                cursor.style.left = mouseX + 'px';
+                cursor.style.top = mouseY + 'px';
+            });
+
+            // Smooth follower animation
+            function animateFollower() {
+                followerX += (mouseX - followerX) * 0.1;
+                followerY += (mouseY - followerY) * 0.1;
+                
+                cursorFollower.style.left = followerX + 'px';
+                cursorFollower.style.top = followerY + 'px';
+                
+                requestAnimationFrame(animateFollower);
+            }
+            animateFollower();
+
+            // Cursor interactions
+            document.querySelectorAll('a, button, .hero-stat, .feature-card, .security-card').forEach(el => {
+                el.addEventListener('mouseenter', () => cursor.classList.add('expand'));
+                el.addEventListener('mouseleave', () => cursor.classList.remove('expand'));
+            });
+        }
+
+        // Dynamic particles system
+        function setupParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                createParticle();
+            }
+
+            function createParticle() {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                
+                particlesContainer.appendChild(particle);
+
+                // Remove and recreate particle after animation
+                setTimeout(() => {
+                    particle.remove();
+                    createParticle();
+                }, (Math.random() * 10 + 10) * 1000);
+            }
+        }
+
+        // Enhanced scroll animations
+        function setupAnimations() {
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry, index) => {
+                    if (entry.isIntersecting) {
+                        setTimeout(() => {
+                            entry.target.classList.add('visible');
+                            
+                            // Add special effects for different elements
+                            if (entry.target.classList.contains('feature-card')) {
+                                addRippleEffect(entry.target);
+                            }
+                        }, index * 100);
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.animate-on-scroll').forEach((el, index) => {
+                observer.observe(el);
+                
+                // Add random animation variants
+                const variants = ['fade-up', 'fade-left', 'fade-right', 'scale-in'];
+                if (index % 4 !== 0) {
+                    const randomVariant = variants[index % variants.length];
+                    el.classList.add(randomVariant);
+                }
+            });
+        }
+
+        // Ripple effect
+        function addRippleEffect(element) {
+            const ripple = document.createElement('div');
+            ripple.style.cssText = `
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.2);
+                pointer-events: none;
+                transform: scale(0);
+                animation: ripple 0.8s ease-out;
+                top: 50%;
+                left: 50%;
+                width: 20px;
+                height: 20px;
+                margin-left: -10px;
+                margin-top: -10px;
+            `;
+            
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes ripple {
+                    to {
+                        transform: scale(8);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            element.style.position = 'relative';
+            element.style.overflow = 'hidden';
+            element.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 800);
+        }
+
+        // Enhanced interactions
+        function setupInteractions() {
+            // Enhanced hover effects for buttons
+            document.querySelectorAll('.btn-hero, .btn-nav').forEach(btn => {
+                btn.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-4px) scale(1.05)';
+                });
+                
+                btn.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+
+            // Enhanced card interactions
+            document.querySelectorAll('.feature-card, .security-card, .process-step').forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-12px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+
+            // Stats hover effects
+            document.querySelectorAll('.hero-stat').forEach(stat => {
+                stat.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-8px) scale(1.05)';
+                });
+                
+                stat.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        }
+
+        // Enhanced scroll effects
+        function setupScrollEffects() {
+            const navigation = document.getElementById('navigation');
+            let lastScrollTop = 0;
+            let scrollTimer;
+
+            window.addEventListener('scroll', () => {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                // Navigation scroll effects
+                if (scrollTop > 100) {
+                    navigation.classList.add('scrolled');
+                } else {
+                    navigation.classList.remove('scrolled');
+                }
+                
+                // Hide/show navigation on scroll
+                if (scrollTop > lastScrollTop && scrollTop > 200) {
+                    navigation.classList.add('hidden');
+                } else {
+                    navigation.classList.remove('hidden');
+                }
+                
+                lastScrollTop = scrollTop;
+
+                // Clear timer
+                clearTimeout(scrollTimer);
+                scrollTimer = setTimeout(() => {
+                    navigation.classList.remove('hidden');
+                }, 150);
+            }, { passive: true });
+
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        }
+
+        // Enhanced stats animation
+        function initializeStats() {
+            const statsObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        animateStats();
+                        statsObserver.disconnect();
+                    }
+                });
+            });
+
+            const heroStats = document.querySelector('.hero-stats');
+            if (heroStats) {
+                statsObserver.observe(heroStats);
+            }
+        }
+
+        function animateStats() {
+            const stats = document.querySelectorAll('.hero-stat-number');
+            
+            stats.forEach((stat, index) => {
+                const target = parseFloat(stat.dataset.target);
+                let current = 0;
+                const increment = target / 60;
+                const suffix = stat.dataset.target.includes('.') ? '%' : '';
+                
+                setTimeout(() => {
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= target) {
+                            stat.textContent = target + (suffix === '%' ? '%' : '');
+                            clearInterval(timer);
+                            
+                            // Add completion effect
+                            stat.style.transform = 'scale(1.1)';
+                            setTimeout(() => {
+                                stat.style.transform = 'scale(1)';
+                            }, 300);
+                        } else {
+                            stat.textContent = Math.floor(current) + (suffix === '%' ? '%' : '');
+                        }
+                    }, 50);
+                }, index * 200);
+            });
+        }
+
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
+
+        // Error handling
+        window.addEventListener('error', (e) => {
+            console.error('Application error:', e.error);
+        });
+
+        // Performance monitoring
+        window.addEventListener('load', () => {
+            const loadTime = performance.now();
+            console.log(`Page loaded in ${loadTime.toFixed(2)}ms`);
+        });
+    </script>
+</body>
+</html>
