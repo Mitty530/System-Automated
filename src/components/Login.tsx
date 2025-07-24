@@ -1,70 +1,152 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { isAuthorizedUser, validateEmailDomain } from '../config/authorizedUsers';
+
 import logo from '../logo.svg';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [success, setSuccess] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
-  const { signIn, signOut, user } = useAuth();
+  const { user, signInWithMagicLink } = useAuth();
+
+  // Extract first name from user profile or localStorage
+  const getFirstName = (user: any) => {
+    if (!user) {
+      // Try to get saved name from localStorage for personalized greeting
+      const savedName = localStorage.getItem('adfd-user-first-name');
+      return savedName || '';
+    }
+
+    // Try to get first name from the name field
+    if (user.name) {
+      const nameParts = user.name.split(' ');
+      const firstName = nameParts[0];
+      // Save first name to localStorage for future personalized greetings
+      localStorage.setItem('adfd-user-first-name', firstName);
+      return firstName;
+    }
+
+    // Fallback to email prefix
+    if (user.email) {
+      const emailPrefix = user.email.split('@')[0];
+      // Capitalize first letter
+      const firstName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+      // Save first name to localStorage for future personalized greetings
+      localStorage.setItem('adfd-user-first-name', firstName);
+      return firstName;
+    }
+
+    return 'User';
+  };
 
   useEffect(() => {
     setMounted(true);
+
+    // Test Supabase connection
+    const testConnection = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        console.log('🔗 Supabase connection test:', { data: !!data, error: error?.message || 'No error' });
+      } catch (err) {
+        console.error('🔗 Supabase connection failed:', err);
+      }
+    };
+
+    testConnection();
+
+
+
+
+
+    // Load saved email if Remember Me was previously enabled
+    const savedEmail = localStorage.getItem('adfd-saved-email');
+    const rememberMeEnabled = localStorage.getItem('adfd-remember-me') === 'true';
+
+    if (rememberMeEnabled && savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
   }, []);
+
+  // Handle auto-redirect for logged-in users with Remember Me
+  useEffect(() => {
+    const rememberMeEnabled = localStorage.getItem('adfd-remember-me') === 'true';
+
+    if (user && rememberMeEnabled) {
+      console.log('🔄 Auto-redirecting logged-in user with Remember Me...');
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1000); // Small delay to show the welcome message
+    }
+  }, [user, navigate]);
 
   // Don't auto-redirect - let users access login page even if logged in
 
-  const validateEmailDomain = (email: string): boolean => {
-    const adminEmail = 'Mamadouourydiallo819@gmail.com';
-    const allowedDomain = '@adfd.ae';
 
-    // Normalize email for comparison (case-insensitive)
-    const normalizedEmail = email.toLowerCase().trim();
-    const normalizedAdminEmail = adminEmail.toLowerCase();
 
-    // Allow admin email as exception (case-insensitive)
-    if (normalizedEmail === normalizedAdminEmail) {
-      return true;
-    }
-
-    // Check if email ends with allowed domain (case-insensitive)
-    return normalizedEmail.endsWith(allowedDomain.toLowerCase());
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleMagicLinkLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccess('');
 
     try {
-      // Validate email domain first
-      if (!validateEmailDomain(email)) {
-        setError('Unauthorized user. Only authorized personnel are allowed to access this system.');
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setError('Please enter a valid email address.');
         setIsLoading(false);
         return;
       }
 
-      console.log('🔄 Authenticating with Supabase...');
-
-      const { error: signInError } = await signIn(email, password);
-
-      if (signInError) {
-        console.error('❌ Login error:', signInError);
-        setError(signInError.message || 'Login failed. Please check your credentials.');
+      // Validate email domain first
+      if (!validateEmailDomain(email)) {
+        setError('You are not authorized to access this system. Contact admin for assistance.');
+        setIsLoading(false);
         return;
       }
 
-      console.log('✅ Supabase authentication successful');
-      // Navigation will be handled by the useEffect hook when user state changes
+      // Check if user is in authorized list
+      if (!isAuthorizedUser(email)) {
+        setError('You are not authorized to access this system. Contact admin for assistance.');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('🔄 Sending magic link to:', email);
+
+      // Send magic link using AuthContext
+      const { error: magicLinkError } = await signInWithMagicLink(email);
+
+      if (magicLinkError) {
+        console.error('❌ Magic link error:', magicLinkError);
+        setError(magicLinkError.message || 'Failed to send login link. Please try again or contact the administrator.');
+        return;
+      }
+
+      console.log('✅ Magic link sent successfully');
+
+      // Save Remember Me preference
+      if (rememberMe) {
+        localStorage.setItem('adfd-remember-me', 'true');
+        localStorage.setItem('adfd-saved-email', email);
+      } else {
+        localStorage.removeItem('adfd-remember-me');
+        localStorage.removeItem('adfd-saved-email');
+      }
+
+      setSuccess('🎉 Login link sent! Check your email and click the link to sign in.');
 
     } catch (error) {
-      console.error('❌ Login error:', error);
-      setError('Login failed. Please try again.');
+      console.error('❌ Magic link error:', error);
+      setError('Failed to send login link. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -98,13 +180,18 @@ const Login: React.FC = () => {
       {/* Premium Styles */}
       <style>{`
         .premium-login-panel {
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: rgba(255, 255, 255, 0.98);
+          backdrop-filter: blur(25px);
+          border: 1px solid rgba(255, 255, 255, 0.3);
           box-shadow:
-            0 24px 48px rgba(0, 0, 0, 0.15),
-            0 12px 24px rgba(0, 0, 0, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            0 32px 64px rgba(0, 0, 0, 0.2),
+            0 16px 32px rgba(0, 0, 0, 0.15),
+            0 8px 16px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+          width: 100%;
+          max-width: 550px;
+          min-height: 600px;
+          padding: 2.5rem;
         }
         
         .premium-brand-panel {
@@ -209,41 +296,7 @@ const Login: React.FC = () => {
           }
         }
 
-        /* Enhanced Password Toggle */
-        .password-toggle {
-          position: absolute;
-          right: 16px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(0, 0, 0, 0.1);
-          border-radius: 8px;
-          padding: 8px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 40px;
-          height: 40px;
-        }
 
-        .password-toggle:hover {
-          background: rgba(255, 255, 255, 0.2);
-          border-color: rgba(0, 0, 0, 0.2);
-          transform: translateY(-50%) scale(1.05);
-        }
-
-        .password-toggle svg {
-          width: 20px;
-          height: 20px;
-          color: #64748b;
-          transition: color 0.3s ease;
-        }
-
-        .password-toggle:hover svg {
-          color: #374151;
-        }
 
 
 
@@ -286,15 +339,29 @@ const Login: React.FC = () => {
           transform: translateX(-2px);
         }
         
-        /* Panel Layout - Ensure exact 50/50 split */
+        /* Panel Layout - Ensure exact 50/50 split with improved proportions */
         .login-panel-left,
         .login-panel-right {
-          flex: 1;
+          flex: 1 1 50%;
           width: 50%;
           height: 100%;
+          min-height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
+          position: relative;
+        }
+
+        .login-panel-left {
+          padding: 3rem 2rem;
+          flex: 1 1 50%;
+          width: 50%;
+        }
+
+        .login-panel-right {
+          padding: 2rem;
+          flex: 1 1 50%;
+          width: 50%;
         }
         
         .login-container {
@@ -452,7 +519,7 @@ const Login: React.FC = () => {
 
       {/* Left Panel - Login Form */}
       <div className="login-panel-left relative z-10">
-        <div className={`premium-login-panel p-6 rounded-2xl ${mounted ? 'fade-in' : ''}`}>
+        <div className={`premium-login-panel rounded-2xl ${mounted ? 'fade-in' : ''}`}>
           {/* Header */}
           <div className="text-center mb-6">
             <div className="inline-flex items-center space-x-3 mb-4">
@@ -465,69 +532,71 @@ const Login: React.FC = () => {
                 <p className="text-xs text-gray-500 font-medium">Financial Platform</p>
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-1">Welcome Back</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">
+              {(() => {
+                const firstName = getFirstName(user);
+                return firstName ? `Welcome Back, ${firstName}!` : 'Welcome Back';
+              })()}
+            </h2>
             <p className="text-sm text-gray-600 font-medium">Authorized Personnel Only</p>
           </div>
 
           {/* Already Logged In Message */}
           {user && (
-            <div className="bg-green-50 border-2 border-green-300 text-green-800 px-4 py-3 rounded-lg text-sm font-semibold mb-4 shadow-md">
+            <div className="bg-green-100 border-2 border-green-400 text-green-900 px-4 py-3 rounded-lg text-sm font-semibold mb-4 shadow-md">
               <div className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
-                  <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-green-700" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <p className="font-bold">You're already logged in!</p>
-                  <p className="text-xs mt-1">You can continue to dashboard or logout to login as a different user.</p>
+                  <p className="font-bold text-green-900">Welcome back, {user.name?.split(' ')[0]}!</p>
+                  <p className="text-xs mt-1 text-green-800">Redirecting you to the dashboard...</p>
                 </div>
-              </div>
-              <div className="mt-3 flex space-x-3">
-                <button
-                  type="button"
-                  onClick={() => navigate('/dashboard')}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-green-700 transition-colors"
-                >
-                  Continue to Dashboard
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await signOut();
-                    setEmail('');
-                    setPassword('');
-                    setError('');
-                  }}
-                  className="bg-gray-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-gray-700 transition-colors"
-                >
-                  Logout & Login as Different User
-                </button>
               </div>
             </div>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-100 border-2 border-red-300 text-red-800 px-4 py-3 rounded-lg text-sm font-semibold mb-4 shadow-md">
+            <div className="bg-red-100 border-2 border-red-500 text-red-900 px-4 py-3 rounded-lg text-sm font-bold mb-4 shadow-xl">
               <div className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
-                  <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  {error}
+                  <p className="font-bold text-red-800 text-base">{error}</p>
                 </div>
               </div>
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          {/* Success Message */}
+          {success && (
+            <div className="bg-green-50 border-2 border-green-400 text-green-900 px-4 py-3 rounded-lg text-sm font-semibold mb-4 shadow-lg">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <svg className="w-5 h-5 text-green-700" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-green-900">{success}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+
+
+          <form onSubmit={handleMagicLinkLogin} className="space-y-8">
             {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                Email Address
+            <div className="space-y-3">
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
+                Email address
               </label>
               <input
                 id="email"
@@ -541,59 +610,45 @@ const Login: React.FC = () => {
               />
             </div>
 
-
-
-            {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
-                Password
+            {/* Remember Me Checkbox - Fixed positioning */}
+            <div className="flex items-center space-x-3 py-2">
+              <input
+                id="remember-me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded transition-colors cursor-pointer"
+              />
+              <label htmlFor="remember-me" className="text-sm text-gray-700 font-medium cursor-pointer select-none">
+                Remember me on this device
               </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="premium-input pr-12"
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  className="password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
-                  title={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {showPassword ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                    ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    )}
-                  </svg>
-                </button>
-              </div>
             </div>
 
-            {/* Submit Button */}
+            {/* Submit Button - Enhanced */}
             <button
               type="submit"
               disabled={isLoading}
-              className="premium-button"
+              className="w-full flex items-center justify-center space-x-3 py-4 px-6 bg-gradient-to-r from-white to-gray-100 hover:from-gray-50 hover:to-gray-200 text-gray-900 border-none rounded-xl shadow-2xl hover:shadow-3xl transition-all duration-400 transform hover:scale-105 hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-white/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               <span className="relative z-10">
                 {isLoading ? (
                   <div className="flex items-center justify-center space-x-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Signing in...</span>
+                    <div className="w-5 h-5 border-2 border-gray-900 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-gray-900 font-bold">Sending link...</span>
                   </div>
                 ) : (
-                  'Login to Platform'
+                  <span className="text-gray-900 font-bold text-lg">Continue</span>
                 )}
               </span>
+              {!isLoading && (
+                <svg className="w-5 h-5 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              )}
             </button>
           </form>
+
+
 
 
 

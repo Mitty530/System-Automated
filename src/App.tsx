@@ -5,7 +5,6 @@ import { AuthProvider } from './contexts/AuthContext';
 // Import components
 import NewLandingPage from './components/NewLandingPage';
 import Login from './components/Login';
-import Signup from './components/Signup';
 
 import Dashboard from './components/Dashboard';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -35,7 +34,6 @@ function App() {
           <Routes>
             <Route path="/" element={<PasswordResetRedirect />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { User, Session, AuthError } from '@supabase/supabase-js';
+import { getAuthorizedUser, isAuthorizedUser } from '../config/authorizedUsers';
 
 interface UserProfile {
   id: string;
@@ -21,8 +22,7 @@ interface AuthContextType {
   user: UserProfile | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signUp: (email: string, password: string, metadata: any) => Promise<{ error: AuthError | null }>;
+  signInWithMagicLink: (email: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
 }
@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session?.user) {
         await fetchUserProfile(session.user);
@@ -87,35 +87,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(basicProfile);
       setLoading(false);
 
-      // Try to fetch the full profile from database (optional)
-      try {
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', authUser.id)
-          .single();
+      // Try to get authorized user profile first
+      const authorizedUser = getAuthorizedUser(authUser.email || '');
 
-        if (!error && data) {
-          // Update with database profile if available
-          const userProfile: UserProfile = {
-            id: data.id,
-            name: data.full_name,
-            email: authUser.email || '',
-            role: data.role,
-            region: data.region,
-            regional_countries: data.regional_countries,
-            can_create_requests: data.can_create_requests,
-            can_approve_reject: data.can_approve_reject,
-            can_disburse: data.can_disburse,
-            view_only_access: data.view_only_access,
-            is_active: data.is_active,
-            avatar_url: data.avatar_url
-          };
-          setUser(userProfile);
+      if (authorizedUser) {
+        // Use authorized user profile
+        const userProfile: UserProfile = {
+          id: authUser.id,
+          name: authorizedUser.name,
+          email: authUser.email || '',
+          role: authorizedUser.role,
+          region: undefined,
+          regional_countries: undefined,
+          can_create_requests: authorizedUser.can_create_requests,
+          can_approve_reject: authorizedUser.can_approve_reject,
+          can_disburse: authorizedUser.can_disburse,
+          view_only_access: authorizedUser.view_only_access,
+          is_active: true,
+          avatar_url: undefined
+        };
+        setUser(userProfile);
+        console.log('✅ Using authorized user profile:', userProfile);
+      } else {
+        // Try to fetch the full profile from database (fallback)
+        try {
+          const { data, error } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', authUser.id)
+            .single();
+
+          if (!error && data) {
+            // Update with database profile if available
+            const userProfile: UserProfile = {
+              id: data.id,
+              name: data.full_name,
+              email: authUser.email || '',
+              role: data.role,
+              region: data.region,
+              regional_countries: data.regional_countries,
+              can_create_requests: data.can_create_requests,
+              can_approve_reject: data.can_approve_reject,
+              can_disburse: data.can_disburse,
+              view_only_access: data.view_only_access,
+              is_active: data.is_active,
+              avatar_url: data.avatar_url
+            };
+            setUser(userProfile);
+          }
+        } catch (dbError) {
+          console.log('Could not fetch database profile, using basic profile:', dbError);
+          // Keep the basic profile - this is not a critical error
         }
-      } catch (dbError) {
-        console.log('Could not fetch database profile, using basic profile:', dbError);
-        // Keep the basic profile - this is not a critical error
       }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
@@ -123,26 +146,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
-  };
+  const signInWithMagicLink = async (email: string) => {
+    console.log('🔐 AuthContext signInWithMagicLink called with:', { email });
 
-  const signUp = async (email: string, password: string, metadata: any) => {
-    const { error } = await supabase.auth.signUp({
+    // Check if user is authorized
+    if (!isAuthorizedUser(email)) {
+      return {
+        error: {
+          message: 'You are not authorized to access this system. Contact admin for assistance.',
+          name: 'AuthorizationError'
+        } as AuthError
+      };
+    }
+
+    const { error } = await supabase.auth.signInWithOtp({
       email,
-      password,
       options: {
-        data: metadata
+        emailRedirectTo: `${window.location.origin}/dashboard`
       }
     });
+
+    console.log('🔐 Supabase magic link result:', { error: error?.message || 'No error' });
     return { error };
   };
 
+
+
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
+    console.log('🔐 AuthContext: Signing out user...');
+
+    try {
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+
+      // Clear local state
+      setUser(null);
+      setSession(null);
+
+      console.log('✅ AuthContext: User signed out successfully');
+    } catch (error) {
+      console.error('❌ AuthContext: Error during signOut:', error);
+
+      // Even if Supabase signOut fails, clear local state
+      setUser(null);
+      setSession(null);
+    }
   };
 
   const resetPassword = async (email: string) => {
@@ -154,8 +202,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     session,
     loading,
-    signIn,
-    signUp,
+    signInWithMagicLink,
     signOut,
     resetPassword
   };

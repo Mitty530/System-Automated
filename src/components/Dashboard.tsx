@@ -16,16 +16,35 @@ const Dashboard: React.FC = () => {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/login');
+      console.log('🔄 User not authenticated, redirecting to login...');
+      navigate('/login', { replace: true });
     }
   }, [user, loading, navigate]);
 
   const handleSignOut = async () => {
     try {
+      console.log('🚪 Sign out button clicked - starting sign out process...');
+
+      // Clear Remember Me data on explicit logout
+      localStorage.removeItem('adfd-remember-me');
+      localStorage.removeItem('adfd-saved-email');
+
+      console.log('🧹 Cleared local storage data');
+
+      // Sign out from Supabase
       await signOut();
-      navigate('/login');
+
+      console.log('✅ User signed out successfully from Supabase');
+
+      // Force navigation to login page
+      navigate('/login', { replace: true });
+
+      console.log('🔄 Navigation to login page initiated');
+
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('❌ Error signing out:', error);
+      // Even if there's an error, still try to navigate to login
+      navigate('/login', { replace: true });
     }
   };
 
@@ -98,7 +117,9 @@ const Dashboard: React.FC = () => {
               </button>
               <button
                 onClick={handleSignOut}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-red-200 hover:border-red-300 cursor-pointer relative z-10"
+                title="Sign out and return to login page"
+                type="button"
               >
                 Sign Out
               </button>
