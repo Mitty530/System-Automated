@@ -391,6 +391,7 @@ html {
     color: var(--text-primary);
     text-align: center;
     overflow: hidden;
+    padding-top: 120px; /* Account for fixed navigation header */
 }
 
 .hero-content-new {
@@ -758,6 +759,27 @@ html {
 
 
 
+/* Stable CTA text classes to replace inline styles */
+.cta-title-new {
+    font-size: clamp(2.25rem, 4vw, 4.5rem);
+    font-weight: 900;
+    color: var(--text-primary);
+    margin-bottom: var(--space-6);
+    line-height: 1.2;
+    text-align: center;
+}
+
+.cta-description-new {
+    font-size: clamp(1.125rem, 2vw, 1.25rem);
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: var(--space-10);
+    line-height: 1.7;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
 /* Enhanced responsive design */
 @media (max-width: 1200px) {
     .features-grid-new {
@@ -784,6 +806,7 @@ html {
 
     .hero-new {
         min-height: 90vh;
+        padding-top: 100px; /* Slightly less padding on mobile */
     }
 
     .hero-actions-new {

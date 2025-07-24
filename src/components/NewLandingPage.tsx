@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Rocket,
@@ -8,12 +8,14 @@ import {
   Clock,
   Users
 } from 'lucide-react';
-import logo from '../logo.svg';
+import OptimizedLogo from './OptimizedLogo';
+import { usePerformance, preloadResource } from '../hooks/usePerformance';
 import '../styles/LandingPage.css';
 
-const NewLandingPage: React.FC = () => {
+const NewLandingPage: React.FC = memo(() => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+  const { logPerformanceMetrics } = usePerformance();
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -53,11 +55,19 @@ const NewLandingPage: React.FC = () => {
 
     observeElements();
 
+    // Preload critical resources
+    preloadResource('/login', 'document');
+
+    // Log performance metrics
+    setTimeout(() => {
+      logPerformanceMetrics();
+    }, 1000);
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, []);
+  }, [logPerformanceMetrics]);
 
   const createParticles = () => {
     const particlesContainer = document.getElementById('particles');
@@ -129,7 +139,7 @@ const NewLandingPage: React.FC = () => {
           <div className="nav-container-new">
             <div className="brand-new" onClick={scrollToTop} style={{ cursor: 'pointer' }}>
               <div className="brand-icon-new">
-                <img src={logo} alt="Quandrox Logo" style={{ width: '32px', height: '32px' }} />
+                <OptimizedLogo size={32} />
               </div>
               <div className="brand-text-new">
                 <div className="brand-name-new">Quandrox</div>
@@ -304,25 +314,11 @@ const NewLandingPage: React.FC = () => {
       {/* Enhanced CTA Section */}
       <section className="section-new" style={{ background: 'var(--gradient-primary)' }}>
         <div className="container-new">
-          <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, maxWidth: '900px', margin: '0 auto' }}>
-            <h2 style={{ 
-              fontSize: 'clamp(var(--text-4xl), 6vw, var(--text-7xl))', 
-              fontWeight: 900, 
-              color: 'var(--text-primary)', 
-              marginBottom: 'var(--space-6)', 
-              lineHeight: 1.2 
-            }}>
+          <div style={{ position: 'relative', zIndex: 1, maxWidth: '900px', margin: '0 auto' }}>
+            <h2 className="cta-title-new">
               Ready to Transform Your Financial Operations?
             </h2>
-            <p style={{ 
-              fontSize: 'var(--text-xl)', 
-              color: 'rgba(255, 255, 255, 0.8)', 
-              marginBottom: 'var(--space-10)', 
-              lineHeight: 1.7, 
-              maxWidth: '700px', 
-              marginLeft: 'auto', 
-              marginRight: 'auto' 
-            }}>
+            <p className="cta-description-new">
               Join leading financial institutions worldwide who trust our platform for secure, efficient, and intelligent fund disbursement operations.
             </p>
             <div style={{ display: 'flex', gap: 'var(--space-6)', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -336,6 +332,8 @@ const NewLandingPage: React.FC = () => {
       </section>
     </div>
   );
-};
+});
+
+NewLandingPage.displayName = 'NewLandingPage';
 
 export default NewLandingPage;

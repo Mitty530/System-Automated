@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { isAuthorizedUser, validateEmailDomain } from '../config/authorizedUsers';
-
-import logo from '../logo.svg';
+import { usePerformance } from '../hooks/usePerformance';
+import OptimizedLogo from './OptimizedLogo';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -15,6 +15,7 @@ const Login: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
   const { user, signInWithMagicLink } = useAuth();
+  const { logPerformanceMetrics } = usePerformance();
 
   // Extract first name from user profile or localStorage
   const getFirstName = (user: any) => {
@@ -61,6 +62,11 @@ const Login: React.FC = () => {
 
     testConnection();
 
+    // Log performance metrics for login page
+    setTimeout(() => {
+      logPerformanceMetrics();
+    }, 100);
+
 
 
 
@@ -73,7 +79,7 @@ const Login: React.FC = () => {
       setEmail(savedEmail);
       setRememberMe(true);
     }
-  }, []);
+  }, [logPerformanceMetrics]);
 
   // Handle auto-redirect for logged-in users with Remember Me
   useEffect(() => {
@@ -521,10 +527,10 @@ const Login: React.FC = () => {
       <div className="login-panel-left relative z-10">
         <div className={`premium-login-panel rounded-2xl ${mounted ? 'fade-in' : ''}`}>
           {/* Header */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center space-x-3 mb-4">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center space-x-3 mb-6">
               <div className="relative">
-                <img src={logo} alt="Quandrox Logo" className="h-10 w-10" />
+                <OptimizedLogo size={40} className="h-10 w-10" />
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full opacity-20 blur"></div>
               </div>
               <div>
@@ -532,7 +538,7 @@ const Login: React.FC = () => {
                 <p className="text-xs text-gray-500 font-medium">Financial Platform</p>
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-1">
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">
               {(() => {
                 const firstName = getFirstName(user);
                 return firstName ? `Welcome Back, ${firstName}!` : 'Welcome Back';
@@ -543,7 +549,7 @@ const Login: React.FC = () => {
 
           {/* Already Logged In Message */}
           {user && (
-            <div className="bg-green-100 border-2 border-green-400 text-green-900 px-4 py-3 rounded-lg text-sm font-semibold mb-4 shadow-md">
+            <div className="bg-green-100 border-2 border-green-400 text-green-900 px-4 py-4 rounded-lg text-sm font-semibold mb-8 shadow-md">
               <div className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
                   <svg className="w-5 h-5 text-green-700" fill="currentColor" viewBox="0 0 20 20">
@@ -552,7 +558,7 @@ const Login: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <p className="font-bold text-green-900">Welcome back, {user.name?.split(' ')[0]}!</p>
-                  <p className="text-xs mt-1 text-green-800">Redirecting you to the dashboard...</p>
+                  <p className="text-xs mt-2 text-green-800">Redirecting you to the dashboard...</p>
                 </div>
               </div>
             </div>
@@ -560,7 +566,7 @@ const Login: React.FC = () => {
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-100 border-2 border-red-500 text-red-900 px-4 py-3 rounded-lg text-sm font-bold mb-4 shadow-xl">
+            <div className="bg-red-100 border-2 border-red-500 text-red-900 px-4 py-4 rounded-lg text-sm font-bold mb-8 shadow-xl">
               <div className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
                   <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
@@ -576,7 +582,7 @@ const Login: React.FC = () => {
 
           {/* Success Message */}
           {success && (
-            <div className="bg-green-50 border-2 border-green-400 text-green-900 px-4 py-3 rounded-lg text-sm font-semibold mb-4 shadow-lg">
+            <div className="bg-green-50 border-2 border-green-400 text-green-900 px-4 py-4 rounded-lg text-sm font-semibold mb-8 shadow-lg">
               <div className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
                   <svg className="w-5 h-5 text-green-700" fill="currentColor" viewBox="0 0 20 20">
@@ -592,9 +598,9 @@ const Login: React.FC = () => {
 
 
 
-          <form onSubmit={handleMagicLinkLogin} className="space-y-8">
+          <form onSubmit={handleMagicLinkLogin} className="space-y-10">
             {/* Email Field */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
                 Email address
               </label>
@@ -611,7 +617,7 @@ const Login: React.FC = () => {
             </div>
 
             {/* Remember Me Checkbox - Fixed positioning */}
-            <div className="flex items-center space-x-3 py-2">
+            <div className="flex items-center space-x-3 py-3">
               <input
                 id="remember-me"
                 type="checkbox"
@@ -655,8 +661,8 @@ const Login: React.FC = () => {
 
 
           {/* Security Notice */}
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center space-x-2">
+          <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center space-x-3">
               <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
@@ -674,7 +680,7 @@ const Login: React.FC = () => {
           {/* Logo and Brand */}
           <div className="mb-8">
             <div className="relative inline-block mb-4">
-              <img src={logo} alt="Quandrox Logo" className="h-12 w-12 mx-auto filter brightness-0 invert" />
+              <OptimizedLogo size={48} className="h-12 w-12 mx-auto" inverted={true} />
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full opacity-30 blur-md"></div>
             </div>
             <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">

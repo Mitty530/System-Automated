@@ -27,6 +27,8 @@ body {
   font-size: 1rem; /* Use rem for consistent scaling */
   min-height: 100vh;
   overflow-x: hidden;
+  font-display: swap; /* Improve font loading performance */
+  contain: layout style; /* Optimize rendering performance */
 }
 
 /* Ensure consistent font rendering across browsers */
@@ -367,4 +369,90 @@ body {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* ===== PERFORMANCE OPTIMIZATIONS ===== */
+
+/* Optimize image loading and rendering */
+img {
+  max-width: 100%;
+  height: auto;
+  loading: lazy; /* Native lazy loading */
+  decoding: async; /* Async image decoding */
+}
+
+/* Optimize SVG rendering */
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  shape-rendering: optimizeSpeed; /* Optimize SVG rendering */
+}
+
+/* Reduce layout shifts with loading states */
+.loading-spinner {
+  contain: layout style paint;
+  will-change: transform;
+}
+
+.lazy-image-container {
+  contain: layout style paint;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Optimize animations for performance */
+.optimized-logo {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0); /* Force hardware acceleration */
+}
+
+/* Reduce motion for accessibility and performance */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Optimize for high DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .optimized-logo {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Critical CSS for above-the-fold content */
+.hero-new,
+.navigation-new,
+.premium-login-panel {
+  contain: layout style;
+}
+
+/* Optimize font loading */
+@font-face {
+  font-family: 'Inter';
+  font-display: swap;
+  font-weight: 400 700;
+}
+
+/* Performance hints for browsers */
+.btn-hero-new,
+.btn-nav-new,
+.premium-input {
+  contain: layout style;
+  will-change: transform, box-shadow;
+}
+
+/* Optimize scrolling performance */
+.landing-page-new,
+.login-container {
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
