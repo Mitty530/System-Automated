@@ -7,8 +7,14 @@
   box-sizing: border-box;
 }
 
+/* Prevent font size inflation on mobile */
 html {
   scroll-behavior: smooth;
+  font-size: 16px; /* Base font size for consistent scaling */
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -18,7 +24,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
   color: #1e293b;
-  font-size: 16px;
+  font-size: 1rem; /* Use rem for consistent scaling */
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Ensure consistent font rendering across browsers */
+*, *::before, *::after {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Color Variables */
@@ -121,15 +135,16 @@ body {
 .font-semibold { font-weight: 600; }
 .font-medium { font-weight: 500; }
 
-.text-xl { font-size: 1.375rem; }
-.text-2xl { font-size: 1.75rem; }
-.text-3xl { font-size: 2.125rem; }
-.text-4xl { font-size: 2.5rem; }
-.text-5xl { font-size: 3.25rem; }
-.text-6xl { font-size: 4rem; }
-
-.text-sm { font-size: 1rem; }
-.text-xs { font-size: 0.875rem; }
+.text-xs { font-size: 0.75rem; }
+.text-sm { font-size: 0.875rem; }
+.text-base { font-size: 1rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-3xl { font-size: 1.875rem; }
+.text-4xl { font-size: 2.25rem; }
+.text-5xl { font-size: 3rem; }
+.text-6xl { font-size: 3.75rem; }
 
 .mb-2 { margin-bottom: 0.5rem; }
 .mb-3 { margin-bottom: 0.75rem; }
@@ -273,10 +288,20 @@ body {
   .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sm\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .sm\:flex-row { flex-direction: row; }
+  .sm\:text-lg { font-size: 1.125rem; }
+  .sm\:text-xl { font-size: 1.25rem; }
+  .sm\:text-2xl { font-size: 1.5rem; }
+  .sm\:text-3xl { font-size: 1.875rem; }
+  .sm\:text-4xl { font-size: 2.25rem; }
   .sm\:text-5xl { font-size: 3rem; }
 }
 
 @media (min-width: 768px) {
+  .md\:text-lg { font-size: 1.125rem; }
+  .md\:text-xl { font-size: 1.25rem; }
+  .md\:text-2xl { font-size: 1.5rem; }
+  .md\:text-3xl { font-size: 1.875rem; }
+  .md\:text-4xl { font-size: 2.25rem; }
   .md\:text-5xl { font-size: 3rem; }
   .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -287,6 +312,11 @@ body {
 
 @media (min-width: 1024px) {
   .lg\:px-8 { padding-left: 2rem; padding-right: 2rem; }
+  .lg\:text-xl { font-size: 1.25rem; }
+  .lg\:text-2xl { font-size: 1.5rem; }
+  .lg\:text-3xl { font-size: 1.875rem; }
+  .lg\:text-4xl { font-size: 2.25rem; }
+  .lg\:text-5xl { font-size: 3rem; }
   .lg\:text-6xl { font-size: 3.75rem; }
   .lg\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
