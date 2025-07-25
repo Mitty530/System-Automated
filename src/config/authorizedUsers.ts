@@ -131,6 +131,16 @@ export const AUTHORIZED_USERS: AuthorizedUser[] = [
     can_approve_reject: true,
     can_disburse: true,
     view_only_access: false
+  },
+  {
+    email: 'ousmanehabi.168@gmail.com',
+    name: 'Ousame',
+    role: 'admin',
+    department: 'Administration',
+    can_create_requests: true,
+    can_approve_reject: true,
+    can_disburse: true,
+    view_only_access: false
   }
 ];
 
@@ -150,15 +160,19 @@ export const getAuthorizedUser = (email: string): AuthorizedUser | null => {
 };
 
 export const validateEmailDomain = (email: string): boolean => {
-  const adminEmail = 'Mamadouourydiallo819@gmail.com';
+  const adminEmails = [
+    'Mamadouourydiallo819@gmail.com',
+    'ousmanehabi.168@gmail.com'
+  ];
   const allowedDomain = '@adfd.ae';
 
   // Normalize email for comparison (case-insensitive)
   const normalizedEmail = email.toLowerCase().trim();
-  const normalizedAdminEmail = adminEmail.toLowerCase();
 
-  // Allow admin email as exception (case-insensitive)
-  if (normalizedEmail === normalizedAdminEmail) {
+  // Allow admin emails as exceptions (case-insensitive)
+  if (adminEmails.some(adminEmail =>
+    normalizedEmail === adminEmail.toLowerCase()
+  )) {
     return true;
   }
 
