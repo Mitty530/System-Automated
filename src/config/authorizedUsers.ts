@@ -1,5 +1,6 @@
 // Authorized ADFD Team Members
 // Only these users are allowed to access the system
+// Updated: Added Ousame as admin user
 
 export interface AuthorizedUser {
   email: string;
