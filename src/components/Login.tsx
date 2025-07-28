@@ -14,7 +14,7 @@ const Login: React.FC = () => {
   const [mounted, setMounted] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
-  const { user, signInWithMagicLink } = useAuth();
+  const { user, loading, signInWithMagicLink } = useAuth();
   const { logPerformanceMetrics } = usePerformance();
 
   // Extract first name from user profile or localStorage
@@ -81,19 +81,16 @@ const Login: React.FC = () => {
     }
   }, [logPerformanceMetrics]);
 
-  // Handle auto-redirect for logged-in users with Remember Me
+  // Handle auto-redirect for logged-in users
   useEffect(() => {
-    const rememberMeEnabled = localStorage.getItem('adfd-remember-me') === 'true';
-
-    if (user && rememberMeEnabled) {
-      console.log('🔄 Auto-redirecting logged-in user with Remember Me...');
+    if (user && !loading) {
+      console.log('🔄 User is authenticated, redirecting to dashboard...');
+      // Show welcome message briefly, then redirect
       setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000); // Small delay to show the welcome message
+        navigate('/dashboard', { replace: true });
+      }, 1500); // Slightly longer delay to show the welcome message
     }
-  }, [user, navigate]);
-
-  // Don't auto-redirect - let users access login page even if logged in
+  }, [user, loading, navigate]);
 
 
 

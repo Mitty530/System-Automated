@@ -9,6 +9,7 @@ const NewLandingPage = lazy(() => import('./components/NewLandingPage'));
 const Login = lazy(() => import('./components/Login'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
+const MainLayout = lazy(() => import('./components/layout/MainLayout'));
 
 // Loading component
 const LoadingSpinner: React.FC = () => (
@@ -75,13 +76,12 @@ function App() {
         <div className="App">
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
-              <Route path="/" element={<PasswordResetRedirect />} />
+              {/* Clean dashboard without sidebar/footer */}
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              {/* Keep login route for when needed */}
               <Route path="/login" element={<Login />} />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
+              {/* Future routes will be added here with MainLayout wrapper */}
             </Routes>
           </Suspense>
         </div>

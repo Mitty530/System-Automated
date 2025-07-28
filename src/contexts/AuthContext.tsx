@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { getAuthorizedUser, isAuthorizedUser } from '../config/authorizedUsers';
+import { AuditTrailService } from '../lib/auditTrail';
+import { DatabaseService } from '../lib/database';
 
 interface UserProfile {
   id: string;
@@ -43,22 +45,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchUserProfile(session.user);
-      } else {
-        setLoading(false);
-      }
-    });
+    // Development mode: Create a mock user for dashboard testing
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🧪 Development mode: Creating mock user for dashboard testing...');
+      const mockUser: UserProfile = {
+        id: 'dev-user-id',
+        name: 'Mamadou Oury Diallo',
+        email: 'Mamadouourydiallo819@gmail.com',
+        role: 'admin',
+        can_create_requests: true,
+        can_approve_reject: true,
+        can_disburse: true,
+        view_only_access: false,
+        is_active: true
+      };
+      setUser(mockUser);
+      setLoading(false);
+      return;
+    }
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // Handle magic link authentication on page load
+    const handleAuthCallback = async () => {
+      console.log('🔍 Checking for authentication callback...');
+
+      // Check if this is a magic link callback (has auth tokens in URL)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+
+      if (accessToken && refreshToken) {
+        console.log('🔗 Magic link authentication detected, processing tokens...');
+
+        try {
+          // Set the session with the tokens from the magic link
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+
+          if (error) {
+            console.error('❌ Error setting session from magic link:', error);
+            setLoading(false);
+            return;
+          }
+
+          if (data.session?.user) {
+            console.log('✅ Magic link authentication successful');
+            await fetchUserProfile(data.session.user);
+
+            // Clean up the URL by removing the hash parameters
+            window.history.replaceState({}, document.title, window.location.pathname);
+            return;
+          }
+        } catch (error) {
+          console.error('❌ Magic link processing error:', error);
+        }
+      }
+
+      // Get initial session (normal flow)
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔍 Getting initial session...', session ? 'Found' : 'Not found');
       setSession(session);
       if (session?.user) {
         await fetchUserProfile(session.user);
       } else {
+        setLoading(false);
+      }
+    };
+
+    handleAuthCallback();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state change:', event, session ? 'Session exists' : 'No session');
+      setSession(session);
+      if (session?.user) {
+        console.log('👤 User found in session, fetching profile...');
+        await fetchUserProfile(session.user);
+      } else {
+        // Log session end if user was previously logged in
+        if (event === 'SIGNED_OUT') {
+          await AuditTrailService.logSessionEnd('logout');
+        }
+        console.log('❌ No user in session, clearing state...');
         setUser(null);
         setLoading(false);
       }
@@ -69,6 +138,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async (authUser: User) => {
     try {
+      console.log('🔍 Fetching user profile for:', authUser.email);
+
       // Create a basic profile from auth user data first
       const basicProfile: UserProfile = {
         id: authUser.id,
@@ -83,12 +154,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         is_active: true
       };
 
+      console.log('📝 Created basic profile:', basicProfile);
+
       // Set the basic profile immediately to allow login
       setUser(basicProfile);
       setLoading(false);
 
       // Try to get authorized user profile first
       const authorizedUser = getAuthorizedUser(authUser.email || '');
+      console.log('🔍 Authorized user lookup result:', authorizedUser ? 'Found' : 'Not found');
 
       if (authorizedUser) {
         // Use authorized user profile
@@ -106,6 +180,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           is_active: true,
           avatar_url: undefined
         };
+
+        // Initialize audit trail for this session
+        const sessionId = `session_${Date.now()}_${authUser.id}`;
+        localStorage.setItem('adfd-session-start', Date.now().toString());
+        localStorage.setItem('adfd-session-id', sessionId);
+
+        AuditTrailService.initialize(authUser.id, sessionId);
+
+        // Create user session record
+        await DatabaseService.createUserSession({
+          id: sessionId,
+          user_id: authUser.id,
+          session_token: session?.access_token || '',
+          ip_address: undefined, // Will be populated by audit service
+          user_agent: navigator.userAgent,
+          login_at: new Date().toISOString(),
+          is_active: true,
+          remember_me: localStorage.getItem('adfd-remember-me') === 'true'
+        });
+
+        // Log successful login
+        await AuditTrailService.logUserActivity('login', `User ${userProfile.name} logged in successfully`, {
+          user_role: userProfile.role,
+          user_department: authorizedUser.department,
+          login_method: 'magic_link',
+          session_id: sessionId
+        });
+
         setUser(userProfile);
         console.log('✅ Using authorized user profile:', userProfile);
       } else {
@@ -151,6 +253,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check if user is authorized
     if (!isAuthorizedUser(email)) {
+      // Log unauthorized access attempt
+      await AuditTrailService.logSecurityEvent(
+        'unauthorized_access',
+        `Unauthorized login attempt by ${email}`,
+        {
+          user_email: email,
+          attempt_timestamp: new Date().toISOString()
+        }
+      );
+
       return {
         error: {
           message: 'You are not authorized to access this system. Contact admin for assistance.',
@@ -162,7 +274,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+        shouldCreateUser: false, // Don't create new users, only allow existing authorized users
       }
     });
 
@@ -176,6 +289,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('🔐 AuthContext: Signing out user...');
 
     try {
+      // Log session end before signing out
+      if (user) {
+        await AuditTrailService.logSessionEnd('logout');
+
+        // End user session in database
+        const sessionId = localStorage.getItem('adfd-session-id');
+        if (sessionId) {
+          await DatabaseService.endUserSession(sessionId);
+        }
+      }
+
+      // Clear session storage
+      localStorage.removeItem('adfd-session-start');
+      localStorage.removeItem('adfd-session-id');
+      localStorage.removeItem('adfd-remember-me');
+      localStorage.removeItem('adfd-saved-email');
+
       // Sign out from Supabase
       await supabase.auth.signOut();
 
@@ -186,6 +316,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('✅ AuthContext: User signed out successfully');
     } catch (error) {
       console.error('❌ AuthContext: Error during signOut:', error);
+
+      // Log the error
+      await AuditTrailService.logError('signout_error', 'Failed to sign out properly', error instanceof Error ? error.stack : undefined);
 
       // Even if Supabase signOut fails, clear local state
       setUser(null);
