@@ -1,0 +1,197 @@
+@import "tailwindcss";
+
+/* Cross-browser compatibility reset */
+* {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Ensure consistent rendering across browsers */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+}
+
+/* Custom animations for ADFD system */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Enhanced theme for workflow-based request details modal */
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Workflow status colors */
+  --color-workflow-pending: #f59e0b;
+  --color-workflow-approved: #10b981;
+  --color-workflow-rejected: #ef4444;
+  --color-workflow-in-progress: #3b82f6;
+  
+  /* Decision action colors */
+  --color-decision-approve: #059669;
+  --color-decision-reject: #dc2626;
+  --color-decision-disburse: #7c3aed;
+  --color-decision-send: #0891b2;
+  
+  /* Audit trail colors */
+  --color-audit-bg: #f8fafc;
+  --color-audit-border: #e2e8f0;
+  --color-audit-timestamp: #64748b;
+  
+  /* Comment system colors */
+  --color-comment-bg: #f1f5f9;
+  --color-comment-border: #cbd5e1;
+  --color-comment-decision: #fef3c7;
+  --color-comment-general: #f0f9ff;
+  
+  /* Modal enhancements */
+  --modal-backdrop: rgba(15, 23, 42, 0.75);
+  --modal-border-radius: 24px;
+  --modal-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Cross-browser backdrop filter support */
+.backdrop-blur {
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* Safari fallback for backdrop filters */
+@supports not (backdrop-filter: blur(10px)) {
+  .backdrop-blur {
+    background: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .backdrop-blur-dark {
+    background: rgba(0, 0, 0, 0.8) !important;
+  }
+}
+
+/* Ensure consistent flexbox behavior */
+.flex {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+
+.flex-col {
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+}
+
+#root {
+  margin: auto;
+}
+
+@utility workflowstatuspending {
+  background-color: var(--color-workflow-pending);
+  color: white;
+}
+
+@utility workflowstatusapproved {
+  background-color: var(--color-workflow-approved);
+  color: white;
+}
+
+@utility workflowstatusrejected {
+  background-color: var(--color-workflow-rejected);
+  color: white;
+}
+
+@utility workflowstatusinprogress {
+  background-color: var(--color-workflow-in-progress);
+  color: white;
+}
+
+@utility decisionbtnapprove {
+  background-color: var(--color-decision-approve);
+  color: white;
+  border: 2px solid var(--color-decision-approve);
+  transition: all 0.2s ease;
+}
+
+@utility decisionbtnreject {
+  background-color: var(--color-decision-reject);
+  color: white;
+  border: 2px solid var(--color-decision-reject);
+  transition: all 0.2s ease;
+}
+
+@utility decisionbtndisburse {
+  background-color: var(--color-decision-disburse);
+  color: white;
+  border: 2px solid var(--color-decision-disburse);
+  transition: all 0.2s ease;
+}
+
+@utility decisionbtnsend {
+  background-color: var(--color-decision-send);
+  color: white;
+  border: 2px solid var(--color-decision-send);
+  transition: all 0.2s ease;
+}
+
+@utility audittimelineitem {
+  background-color: var(--color-audit-bg);
+  border: 1px solid var(--color-audit-border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+@utility commentitemdecision {
+  background-color: var(--color-comment-decision);
+  border-left: 4px solid var(--color-workflow-pending);
+}
+
+@utility commentitemgeneral {
+  background-color: var(--color-comment-general);
+  border-left: 4px solid var(--color-workflow-in-progress);
+}
+
+@utility modalenhanced {
+  backdrop-filter: blur(8px);
+  border-radius: var(--modal-border-radius);
+  box-shadow: var(--modal-shadow);
+}
+
+/* Decision button hover effects using regular CSS */
+.decisionbtnapprove:hover {
+  background-color: transparent;
+  color: var(--color-decision-approve);
+}
+
+.decisionbtnreject:hover {
+  background-color: transparent;
+  color: var(--color-decision-reject);
+}
+
+.decisionbtndisburse:hover {
+  background-color: transparent;
+  color: var(--color-decision-disburse);
+}
+
+.decisionbtnsend:hover {
+  background-color: transparent;
+  color: var(--color-decision-send);
+}

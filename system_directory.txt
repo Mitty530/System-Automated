@@ -1,0 +1,227 @@
+# ADFD Tracking System - System Directory Structure
+
+## Project Overview
+ADFD (Abu Dhabi Fund for Development) Tracking System
+Enterprise-grade withdrawal request platform with intelligent automation and bank-level security.
+
+## System Architecture
+
+### Root Directory Structure
+```
+/
+├── App.flowapp.jsx              # Main application component with routing
+├── KombaiWrapper.jsx            # Kombai integration wrapper
+├── main.jsx                     # Application entry point
+├── index.html                   # HTML template
+├── index.css                    # Global styles and animations
+├── package.json                 # Dependencies and scripts
+├── vite.config.js              # Vite build configuration
+├── postcss.config.js           # PostCSS configuration
+├── eslint.config.js            # ESLint configuration
+├── jsconfig.app.json           # JavaScript configuration
+├── README.md                   # Project documentation
+├── .env.local                  # Environment variables (not in repo)
+├── .gitignore                  # Git ignore rules
+└── src/                        # Source code directory
+```
+
+### Source Code Structure (/src)
+```
+src/
+├── components/                  # React components
+│   ├── ui/                     # Reusable UI components
+│   │   ├── Modal.jsx           # Modal component
+│   │   ├── Card.jsx            # Card component
+│   │   ├── Button.jsx          # Button component
+│   │   ├── Badge.jsx           # Badge component
+│   │   └── Input.jsx           # Input component
+│   ├── LandingPage.jsx         # Landing page component
+│   ├── MagicLinkLoginModal.jsx # Authentication modal
+│   ├── AuthCallback.jsx        # Auth callback handler
+│   ├── WithdrawalRequestTracker.jsx # Main dashboard
+│   ├── Header.jsx              # Dashboard header
+│   ├── DashboardStats.jsx      # Statistics display
+│   ├── ProcessTracking.jsx     # Workflow tracking
+│   ├── FiltersSection.jsx      # Request filters
+│   ├── RequestsTable.jsx       # Requests data table
+│   ├── CreateRequestModal.jsx  # New request creation
+│   ├── EnhancedRequestDetailsModal.jsx # Request details
+│   ├── ProfileModal.jsx        # User profile modal
+│   ├── LogoutConfirmation.jsx  # Logout confirmation
+│   ├── PermissionGuard.jsx     # Permission checking
+│   ├── StatusIcon.jsx          # Status indicators
+│   ├── DecisionActionPanel.jsx # Decision actions
+│   ├── AuditTrailSection.jsx   # Audit trail display
+│   ├── CommentsSection.jsx     # Comments management
+│   ├── WorkflowStatusIndicator.jsx # Workflow status
+│   ├── UserRoleIndicator.jsx   # User role display
+│   └── SimpleErrorBoundary.jsx # Error boundary
+├── contexts/                   # React contexts
+│   └── AuthContext.jsx         # Authentication context
+├── data/                       # Data and mock data
+│   ├── appMockData.js          # Application mock data
+│   ├── withdrawalMockData.js   # Withdrawal mock data
+│   └── enums.js                # System enumerations
+├── hooks/                      # Custom React hooks
+│   └── usePerformance.js       # Performance monitoring
+├── lib/                        # External library configurations
+│   └── supabase.js             # Supabase client setup
+├── utils/                      # Utility functions
+│   ├── rolePermissions.js      # Role-based permissions
+│   ├── formatters.js           # Data formatters
+│   ├── formValidation.js       # Form validation
+│   └── workflowFormatters.js   # Workflow formatters
+└── config/                     # Configuration files
+    └── authorizedUsers.js      # User authorization config
+```
+
+## User Roles and Permissions
+
+### Role Hierarchy
+1. **Admin** - Full system access
+2. **Loan Administrator** - Full access to loan operations
+3. **Archive Team** - Create and view requests
+4. **Operations Team** - Approve/reject requests by region
+5. **Core Banking** - Disburse approved requests
+6. **Observer** - View-only access
+
+### Regional Operations Teams
+- **Europe/Latin America Operations**
+- **Africa Operations** 
+- **Asia Operations**
+
+### Workflow Stages
+1. **Initial Review** - Archive team creates requests
+2. **Technical Review** - Loan administrators review
+3. **Regional Approval** - Operations teams approve/reject by region
+4. **Core Banking** - Banking team disburses funds
+5. **Disbursed** - Completed requests
+
+## Authentication System
+
+### Magic Link Authentication
+- Domain restrictions: @adfd.ae
+- Admin exceptions: Mamadouourydiallo819@gmail.com
+- Supabase-powered authentication
+- JWT token management
+- Session persistence
+
+### Security Features
+- End-to-end encryption
+- Role-based access control
+- Comprehensive audit trails
+- Multi-factor authentication support
+- Session timeout management
+
+## Database Schema (Supabase)
+
+### Core Tables
+- **users** - User profiles and roles
+- **withdrawal_requests** - Main request data
+- **audit_logs** - System audit trail
+- **comments** - Request comments
+- **decisions** - Approval/rejection decisions
+- **workflow_stages** - Stage tracking
+
+### Authentication
+- Supabase Auth integration
+- Row Level Security (RLS) policies
+- Domain-based user validation
+
+## Technology Stack
+
+### Frontend
+- React 19.0.0
+- React Router 6.30.1
+- Tailwind CSS 4.1.11
+- Lucide React (icons)
+- Date-fns (date handling)
+
+### Backend/Database
+- Supabase (Backend as a Service)
+- PostgreSQL database
+- Real-time subscriptions
+- Edge functions
+
+### Build Tools
+- Vite 6.2.0
+- ESLint 9.21.0
+- PostCSS 8.5.6
+
+### Development
+- Hot Module Replacement (HMR)
+- Source maps
+- Performance monitoring
+- Error boundaries
+
+## Environment Configuration
+
+### Required Environment Variables
+```
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### Build Modes
+- Development: Full debugging, source maps
+- Production: Minified, optimized
+
+## Performance Optimizations
+
+### Authentication
+- Optimized session loading (<70ms)
+- Local domain validation
+- Minimal loading states
+- Immediate redirects
+
+### Application
+- Code splitting
+- Lazy loading
+- Performance monitoring
+- Error tracking
+
+## Security Considerations
+
+### Access Control
+- Role-based permissions
+- Domain validation
+- Session management
+- Audit logging
+
+### Data Protection
+- Encrypted data transmission
+- Secure token storage
+- Input validation
+- XSS protection
+
+## Deployment
+
+### Build Process
+```bash
+npm run build    # Production build
+npm run preview  # Preview build
+npm run dev      # Development server
+```
+
+### Static Assets
+- Optimized bundle size
+- Asset compression
+- CDN-ready structure
+
+## Maintenance
+
+### Code Quality
+- ESLint configuration
+- Error boundaries
+- Performance monitoring
+- Comprehensive logging
+
+### Updates
+- Dependency management
+- Security patches
+- Feature additions
+- Bug fixes
+
+---
+Last Updated: August 2025
+System Version: 1.0.0
