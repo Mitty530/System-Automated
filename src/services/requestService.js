@@ -104,9 +104,10 @@ export const getDashboardStats = async (userId = null) => {
 
     const stats = {
       totalRequests: data.length,
-      pendingReview: data.filter(r => r.current_stage === 'technical_review').length,
-      regionalApproval: data.filter(r => r.current_stage === 'regional_approval').length,
-      coreBanking: data.filter(r => r.current_stage === 'core_banking').length,
+      pendingReview: data.filter(r => r.current_stage === 'under_loan_review').length,
+      operationsReview: data.filter(r => r.current_stage === 'under_operations_review').length,
+      returnedForModification: data.filter(r => r.current_stage === 'returned_for_modification').length,
+      approved: data.filter(r => r.current_stage === 'approved').length,
       disbursed: data.filter(r => r.current_stage === 'disbursed').length,
       totalAmount: data.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0),
       averageAmount: data.length > 0 ? data.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0) / data.length : 0
@@ -232,11 +233,12 @@ export const getRegionalStats = async () => {
       regionalStats[region].totalAmount += parseFloat(request.amount) || 0;
 
       switch (request.current_stage) {
-        case 'technical_review':
-        case 'regional_approval':
+        case 'under_loan_review':
+        case 'under_operations_review':
+        case 'returned_for_modification':
           regionalStats[region].pending++;
           break;
-        case 'core_banking':
+        case 'approved':
           regionalStats[region].approved++;
           break;
         case 'disbursed':
@@ -531,16 +533,46 @@ export const recordDecision = async (requestId, userId, decisionType, comment, f
       throw decisionError;
     }
 
-    // Update the request stage and status
-    const statusText = `${decisionType === 'approve' ? 'Approved' : decisionType === 'reject' ? 'Rejected' : 'Updated'} - ${toStage.replace('_', ' ')}`;
+    // Update the request stage and status with descriptive messages
+    let statusText;
+    if (decisionType === 'reject') {
+      if (fromStage === 'under_operations_review') {
+        statusText = `Operations team rejected - Returned to loan administrator for modifications`;
+      } else {
+        statusText = `Rejected at ${fromStage.replace('_', ' ')} stage`;
+      }
+    } else if (decisionType === 'approve') {
+      switch (toStage) {
+        case 'under_operations_review':
+          statusText = `Loan administrator approved - Forwarded to operations team for review`;
+          break;
+        case 'approved':
+          statusText = `Operations team approved - Ready for core banking disbursement`;
+          break;
+        case 'disbursed':
+          statusText = `Core banking completed disbursement - Request fulfilled`;
+          break;
+        default:
+          statusText = `Approved - ${toStage.replace('_', ' ')}`;
+      }
+    } else {
+      statusText = `Updated - ${toStage.replace('_', ' ')}`;
+    }
+
+    const updateData = {
+      current_stage: toStage,
+      status: statusText,
+      updated_at: new Date().toISOString()
+    };
+
+    // Add completion timestamp for disbursed requests
+    if (toStage === 'disbursed') {
+      updateData.completed_at = new Date().toISOString();
+    }
 
     const { data: updatedRequest, error: updateError } = await supabase
       .from('withdrawal_requests')
-      .update({
-        current_stage: toStage,
-        status: statusText,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', requestId)
       .select()
       .single();

@@ -5,6 +5,7 @@ import Button from './ui/Button';
 import Input from './ui/Input';
 import { DecisionType, UserRole, WorkflowStage } from '../data/enums';
 import { formatDecisionType } from '../utils/workflowFormatters';
+import { getAllowedActionsForStage } from '../utils/rolePermissions';
 
 const DecisionActionPanel = ({ 
   request, 
@@ -65,37 +66,42 @@ const DecisionActionPanel = ({
   // Get available actions based on user role and current stage
   const getAvailableActionsForUser = () => {
     if (availableActions.length > 0) return availableActions;
-    
-    const { role } = currentUser;
-    const { currentStage } = request;
 
-    switch (role) {
-      case UserRole.LOAN_ADMIN:
-        if (currentStage === WorkflowStage.INITIAL_REVIEW) {
-          return [DecisionType.APPROVE, DecisionType.REJECT, DecisionType.SEND_TO_OPERATIONS];
-        }
-        if (currentStage === WorkflowStage.TECHNICAL_REVIEW) {
-          return [DecisionType.APPROVE, DecisionType.REJECT, DecisionType.SEND_TO_OPERATIONS];
-        }
-        break;
-      
-      case UserRole.OPERATIONS_TEAM:
-        if (currentStage === WorkflowStage.TECHNICAL_REVIEW) {
-          return [DecisionType.APPROVE, DecisionType.REJECT, DecisionType.SEND_TO_LOAN_ADMIN];
-        }
-        break;
-      
-      case UserRole.CORE_BANKING:
-        if (currentStage === WorkflowStage.CORE_BANKING) {
-          return [DecisionType.DISBURSED, DecisionType.REJECT, DecisionType.SEND_TO_LOAN_ADMIN];
-        }
-        break;
-      
-      default:
-        return [];
+    const userRole = currentUser?.role;
+    const currentStage = request?.current_stage || request?.currentStage;
+
+    if (!userRole || !currentStage) return [];
+
+    // Use the enhanced permission system
+    const allowedActions = getAllowedActionsForStage(userRole, currentStage);
+
+    // Map allowed actions to decision types
+    const decisionActions = [];
+
+    if (allowedActions.includes('approve')) {
+      decisionActions.push(DecisionType.APPROVE);
     }
-    
-    return [];
+
+    if (allowedActions.includes('reject')) {
+      decisionActions.push(DecisionType.REJECT);
+    }
+
+    if (allowedActions.includes('disburse')) {
+      decisionActions.push(DecisionType.DISBURSED);
+    }
+
+    // Add workflow-specific actions based on stage
+    if (userRole === UserRole.LOAN_ADMINISTRATOR) {
+      if (currentStage === WorkflowStage.UNDER_LOAN_REVIEW || currentStage === WorkflowStage.RETURNED_FOR_MODIFICATION) {
+        decisionActions.push(DecisionType.SEND_TO_OPERATIONS);
+      }
+    }
+
+    if (userRole === UserRole.OPERATIONS_TEAM && currentStage === WorkflowStage.UNDER_OPERATIONS_REVIEW) {
+      // Operations team can send back to loan admin via reject (which creates returned_for_modification status)
+    }
+
+    return decisionActions;
   };
 
   const userAvailableActions = getAvailableActionsForUser();

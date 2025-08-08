@@ -113,11 +113,12 @@ npm run lint     # Run ESLint
 
 ### Workflow Stages
 
-1. **Initial Review** - Archive team creates requests
-2. **Technical Review** - Loan administrators review
-3. **Regional Approval** - Operations teams approve/reject by region
-4. **Core Banking** - Banking team disburses funds
-5. **Disbursed** - Completed requests
+1. **Submitted** - Archive team creates and submits requests
+2. **Under Loan Review** - Loan administrators review and verify details
+3. **Under Operations Review** - Regional operations teams approve/reject by region
+4. **Returned for Modification** - Operations team rejected, back to loan administrators
+5. **Approved** - Request approved, ready for core banking processing
+6. **Disbursed** - Funds successfully disbursed
 
 ## 🛡️ Security Features
 

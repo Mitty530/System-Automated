@@ -5,28 +5,28 @@ import Badge from './ui/Badge';
 
 const ProcessTracking = ({ requests }) => {
   const stages = [
-    { 
-      stage: 'initial_review', 
-      name: 'Initial Review', 
-      count: requests.filter(r => r.currentStage === 'initial_review').length, 
+    {
+      stage: 'under_loan_review',
+      name: 'Under Loan Review',
+      count: requests.filter(r => r.currentStage === 'under_loan_review').length,
       color: 'from-orange-500 to-red-500',
       bgColor: 'bg-orange-50',
       textColor: 'text-orange-800',
       icon: Clock
     },
-    { 
-      stage: 'technical_review', 
-      name: 'Technical Review', 
-      count: requests.filter(r => r.currentStage === 'technical_review').length, 
+    {
+      stage: 'under_operations_review',
+      name: 'Under Operations Review',
+      count: requests.filter(r => r.currentStage === 'under_operations_review').length,
       color: 'from-amber-500 to-orange-500',
       bgColor: 'bg-amber-50',
       textColor: 'text-amber-800',
       icon: AlertTriangle
     },
-    { 
-      stage: 'core_banking', 
-      name: 'Core Banking', 
-      count: requests.filter(r => r.currentStage === 'core_banking').length, 
+    {
+      stage: 'approved',
+      name: 'Approved',
+      count: requests.filter(r => r.currentStage === 'approved').length,
       color: 'from-blue-500 to-indigo-500',
       bgColor: 'bg-blue-50',
       textColor: 'text-blue-800',

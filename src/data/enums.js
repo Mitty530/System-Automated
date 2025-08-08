@@ -1,8 +1,10 @@
 // Workflow stages and decision types for the enhanced request details system
 export const WorkflowStage = {
-  INITIAL_REVIEW: 'initial_review',
-  TECHNICAL_REVIEW: 'technical_review', 
-  CORE_BANKING: 'core_banking',
+  SUBMITTED: 'submitted',
+  UNDER_LOAN_REVIEW: 'under_loan_review',
+  UNDER_OPERATIONS_REVIEW: 'under_operations_review',
+  RETURNED_FOR_MODIFICATION: 'returned_for_modification',
+  APPROVED: 'approved',
   DISBURSED: 'disbursed'
 };
 
@@ -15,8 +17,9 @@ export const DecisionType = {
 };
 
 export const UserRole = {
+  ADMIN: 'admin',
   ARCHIVE_TEAM: 'archive_team',
-  LOAN_ADMIN: 'loan_admin', 
+  LOAN_ADMINISTRATOR: 'loan_administrator',
   OPERATIONS_TEAM: 'operations_team',
   CORE_BANKING: 'core_banking'
 };

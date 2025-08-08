@@ -4,6 +4,7 @@ import { Check, X, MessageSquare, ArrowRight, Clock } from 'lucide-react';
 import Button from './ui/Button';
 import { progressWorkflow, canUserPerformAction } from '../utils/workflowManager';
 import { formatWorkflowStage } from '../utils/workflowFormatters';
+import { canPerformWorkflowAction } from '../utils/rolePermissions';
 
 const WorkflowActions = ({ 
   request, 
@@ -16,17 +17,21 @@ const WorkflowActions = ({
   const [pendingAction, setPendingAction] = useState(null);
   const [comments, setComments] = useState('');
 
-  // Check if user can perform actions on this request
-  const canApprove = canUserPerformAction(
-    currentUser?.role, 
-    'approve', 
-    request.currentStage
+  // Check if user can perform actions on this request using enhanced permission system
+  const currentStage = request?.current_stage || request?.currentStage;
+
+  const canApprove = canPerformWorkflowAction(
+    currentUser?.role,
+    'approve',
+    currentStage,
+    request
   );
 
-  const canReject = canUserPerformAction(
-    currentUser?.role, 
-    'reject', 
-    request.currentStage
+  const canReject = canPerformWorkflowAction(
+    currentUser?.role,
+    'reject',
+    currentStage,
+    request
   );
 
   const handleAction = (action) => {
@@ -108,7 +113,7 @@ const WorkflowActions = ({
         )}
 
         <div className="text-sm text-gray-600">
-          Current: {formatWorkflowStage(request.currentStage)}
+          Current: {formatWorkflowStage(currentStage)}
         </div>
       </div>
 

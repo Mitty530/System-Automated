@@ -12,22 +12,34 @@ const WorkflowStatusIndicator = ({
 }) => {
   const workflowStages = [
     {
-      stage: WorkflowStage.INITIAL_REVIEW,
-      label: 'Initial Review',
-      description: 'Archive team creates request, loan admin reviews',
+      stage: WorkflowStage.SUBMITTED,
+      label: 'Submitted',
+      description: 'Archive team created and submitted request',
       icon: <Clock className="w-4 h-4" />
     },
     {
-      stage: WorkflowStage.TECHNICAL_REVIEW,
-      label: 'Technical Review',
-      description: 'Operations team performs technical validation',
+      stage: WorkflowStage.UNDER_LOAN_REVIEW,
+      label: 'Under Loan Review',
+      description: 'Loan administrator reviewing request details',
       icon: <AlertCircle className="w-4 h-4" />
     },
     {
-      stage: WorkflowStage.CORE_BANKING,
-      label: 'Core Banking',
-      description: 'Core banking system processes the request',
+      stage: WorkflowStage.UNDER_OPERATIONS_REVIEW,
+      label: 'Under Operations Review',
+      description: 'Regional operations team reviewing for approval',
       icon: <Clock className="w-4 h-4" />
+    },
+    {
+      stage: WorkflowStage.RETURNED_FOR_MODIFICATION,
+      label: 'Returned for Modification',
+      description: 'Returned to loan administrator for modifications',
+      icon: <AlertCircle className="w-4 h-4" />
+    },
+    {
+      stage: WorkflowStage.APPROVED,
+      label: 'Approved',
+      description: 'Request approved, ready for core banking processing',
+      icon: <CheckCircle className="w-4 h-4" />
     },
     {
       stage: WorkflowStage.DISBURSED,

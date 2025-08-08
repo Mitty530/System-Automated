@@ -22,12 +22,24 @@ export const AuthProvider = ({ children }) => {
     try {
       // Fast local validation first
       const isAdfdDomain = email.endsWith('@adfd.ae');
-      const isAdminGmail = email === 'Mamadouourydiallo819@gmail.com';
 
-      if (isAdfdDomain || isAdminGmail) {
+      // Test emails for development/testing
+      const testEmails = {
+        'mamadouourydiallo819@gmail.com': 'admin',
+        'Mamadouourydiallo819@gmail.com': 'admin', // Case variation
+        'alomran303@gmail.com': 'admin', // Omran full access (existing)
+        'aiglimcard@gmail.com': 'archive_team',
+        'rabbitronlab@gmail.com': 'loan_administrator',
+        'hafssatou280@gmail.com': 'operations_team',
+        'infoquandrox@gmail.com': 'core_banking'
+      };
+
+      const testRole = testEmails[email];
+
+      if (isAdfdDomain || testRole) {
         return {
           allowed: true,
-          user_role: isAdminGmail ? 'admin' : 'archive_team'
+          user_role: testRole || 'archive_team' // Default to archive_team for @adfd.ae emails
         };
       }
 
@@ -214,7 +226,7 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Get user profile by email from our custom user_profiles table
+  // Get user profile by email from our custom user_profiles table with test user fallback
   const getUserProfileByEmail = async (email) => {
     try {
       const { data, error } = await supabase
@@ -224,12 +236,78 @@ export const AuthProvider = ({ children }) => {
         .eq('is_active', true)
         .single()
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
         console.error('Error fetching user profile by email:', error)
         return null
       }
 
-      return data
+      // If user exists in database, return it
+      if (data) {
+        return data
+      }
+
+      // Fallback: Create virtual profile for test emails
+      const testEmails = {
+        'aiglimcard@gmail.com': {
+          full_name: 'Archive Team Test User',
+          role: 'archive_team',
+          department: 'Archive Department',
+          regional_assignment: 'Global',
+          can_create_requests: true,
+          can_approve_reject: false,
+          can_disburse: false,
+          can_access_admin_dashboard: false,
+          can_override_workflow: false
+        },
+        'rabbitronlab@gmail.com': {
+          full_name: 'Loan Administrator Test User',
+          role: 'loan_administrator',
+          department: 'Loan Administration',
+          regional_assignment: 'Global',
+          can_create_requests: true,
+          can_approve_reject: true,
+          can_disburse: false,
+          can_access_admin_dashboard: true,
+          can_override_workflow: true
+        },
+        'hafssatou280@gmail.com': {
+          full_name: 'Operations Team Africa Test User',
+          role: 'operations_team',
+          department: 'Operations Department',
+          regional_assignment: 'Africa',
+          can_create_requests: false,
+          can_approve_reject: true,
+          can_disburse: false,
+          can_access_admin_dashboard: false,
+          can_override_workflow: false
+        },
+        'infoquandrox@gmail.com': {
+          full_name: 'Core Banking Test User',
+          role: 'core_banking',
+          department: 'Core Banking Department',
+          regional_assignment: 'Global',
+          can_create_requests: false,
+          can_approve_reject: false,
+          can_disburse: true,
+          can_access_admin_dashboard: false,
+          can_override_workflow: false
+        }
+      };
+
+      const testProfile = testEmails[email];
+      if (testProfile) {
+        console.log(`🧪 Using test profile for ${email}:`, testProfile.role);
+        return {
+          id: `test-${email.split('@')[0]}`, // Generate test ID
+          email: email,
+          ...testProfile,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+      }
+
+      return null
     } catch (error) {
       console.error('Error in getUserProfileByEmail:', error)
       return null

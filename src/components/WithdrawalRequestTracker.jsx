@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Header from './Header';
 import DashboardStats from './DashboardStats';
 import ProcessTracking from './ProcessTracking';
@@ -10,100 +10,79 @@ import ProfileModal from './ProfileModal';
 import { DecisionType, CommentType, WorkflowStage } from '../data/enums';
 import { fetchRequests, getDashboardStats } from '../services/requestService';
 import { logPageView, logFilter } from '../services/auditService';
+import { useRealtimeRequests, useRealtimeDashboardStats } from '../hooks/useRealtimeRequests';
 
 const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showCreateRequest, setShowCreateRequest] = useState(false);
   const [showRequestDetails, setShowRequestDetails] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [requests, setRequests] = useState([]);
   const [auditTrail, setAuditTrail] = useState([]);
   const [comments, setComments] = useState([]);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCountry, setFilterCountry] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [dashboardStats, setDashboardStats] = useState({
-    totalRequests: 0,
-    pendingReview: 0,
-    regionalApproval: 0,
-    coreBanking: 0,
-    disbursed: 0,
-    totalAmount: 0,
-    averageAmount: 0
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+
+  // Memoize filters for real-time hook
+  const filters = useMemo(() => {
+    const filterObj = {};
+    if (filterStatus !== 'all') {
+      filterObj.stage = filterStatus;
+    }
+    if (filterCountry !== 'all') {
+      filterObj.country = filterCountry;
+    }
+    return filterObj;
+  }, [filterStatus, filterCountry]);
+
+  // Use real-time hooks
+  const {
+    requests,
+    loading: requestsLoading,
+    error: requestsError,
+    refreshRequests,
+    updateRequestOptimistically
+  } = useRealtimeRequests(filters, currentUser);
+
+  const {
+    stats: dashboardStats,
+    loading: statsLoading
+  } = useRealtimeDashboardStats();
+
+  const isLoading = requestsLoading || statsLoading;
+  const error = requestsError;
+
+  // Transform requests data for display
+  const transformedRequests = useMemo(() => {
+    return requests.map(request => ({
+      id: request.id,
+      projectNumber: request.project_number,
+      refNumber: request.ref_number,
+      beneficiaryName: request.beneficiary_name,
+      country: request.country,
+      amount: parseFloat(request.amount),
+      currency: request.currency,
+      valueDate: request.value_date,
+      currentStage: request.current_stage,
+      status: request.status,
+      priority: request.priority,
+      assignedTo: request.assigned_to,
+      createdBy: request.created_by,
+      createdAt: request.created_at,
+      updatedAt: request.updated_at,
+      processingDays: request.processing_days || 0,
+      projectDetails: request.project_details,
+      referenceDocumentation: request.reference_documentation,
+      createdByProfile: request.created_by_profile,
+      assignedToProfile: request.assigned_to_profile,
+      documents: request.request_documents || []
+    }));
+  }, [requests]);
 
 
 
-  // Load data on component mount and when filters change
+  // Log page view on mount and filter usage
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Build filters
-        const filters = {};
-        if (filterStatus !== 'all') {
-          filters.stage = filterStatus;
-        }
-        if (filterCountry !== 'all') {
-          filters.country = filterCountry;
-        }
-
-        // Load requests and stats
-        const [requestsData, statsData] = await Promise.all([
-          fetchRequests(filters),
-          getDashboardStats(currentUser?.id)
-        ]);
-
-        // Transform data for display
-        const transformedRequests = requestsData.map(request => ({
-          id: request.id,
-          projectNumber: request.project_number,
-          refNumber: request.ref_number,
-          beneficiaryName: request.beneficiary_name,
-          country: request.country,
-          amount: parseFloat(request.amount),
-          currency: request.currency,
-          valueDate: request.value_date,
-          currentStage: request.current_stage,
-          status: request.status,
-          priority: request.priority,
-          assignedTo: request.assigned_to,
-          createdBy: request.created_by,
-          createdAt: request.created_at,
-          updatedAt: request.updated_at,
-          processingDays: request.processing_days || 0,
-          projectDetails: request.project_details,
-          referenceDocumentation: request.reference_documentation,
-          createdByProfile: request.created_by_profile,
-          assignedToProfile: request.assigned_to_profile,
-          documents: request.request_documents || []
-        }));
-
-        setRequests(transformedRequests);
-        setDashboardStats(statsData);
-
-        // Log filter application if filters are active
-        if (filterStatus !== 'all' || filterCountry !== 'all') {
-          await logFilter(
-            { status: filterStatus, country: filterCountry },
-            transformedRequests.length
-          );
-        }
-      } catch (error) {
-        console.error('Error loading data:', error);
-        setError(error.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-
-    // Log page view on mount
     if (currentUser) {
       logPageView('Dashboard', {
         filterStatus,
@@ -111,12 +90,29 @@ const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
         user_role: currentUser.role
       });
     }
-  }, [filterStatus, filterCountry, currentUser]); // Clean dependencies
+  }, [currentUser]);
+
+  // Log filter usage for analytics
+  useEffect(() => {
+    const logFilterUsage = async () => {
+      if (filterStatus !== 'all' || filterCountry !== 'all') {
+        try {
+          await logFilter(
+            { status: filterStatus, country: filterCountry },
+            requests.length
+          );
+        } catch (err) {
+          console.error('Error logging filter usage:', err);
+        }
+      }
+    };
+
+    logFilterUsage();
+  }, [filterStatus, filterCountry, requests.length]);
 
   const handleRetry = () => {
-    // Trigger a re-render by updating a state that's in the useEffect dependencies
     setError(null);
-    // The useEffect will automatically re-run due to the dependency array
+    refreshRequests();
   };
 
   const handleProfileClick = () => {
@@ -156,11 +152,14 @@ const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
   };
 
   const updateRequestStatus = (requestId, newStatus, newStage) => {
-    setRequests(prev => prev.map(req => 
-      req.id === requestId 
-        ? { ...req, status: newStatus, currentStage: newStage, updatedAt: new Date().toISOString() }
-        : req
-    ));
+    // Use optimistic update from real-time hook
+    updateRequestOptimistically(requestId, {
+      status: newStatus,
+      current_stage: newStage,
+      currentStage: newStage,
+      updated_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
   };
 
   const handleDecisionMade = (decision, comment) => {
@@ -309,7 +308,7 @@ const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
   };
 
   const getFilteredRequests = () => {
-    let filtered = requests;
+    let filtered = transformedRequests;
 
     if (filterStatus !== 'all') {
       filtered = filtered.filter(req => req.currentStage === filterStatus);
@@ -320,10 +319,10 @@ const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
     }
 
     if (searchTerm) {
-      filtered = filtered.filter(req => 
-        req.refNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        req.beneficiaryName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        req.projectNumber.includes(searchTerm)
+      filtered = filtered.filter(req =>
+        req.refNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        req.beneficiaryName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        req.projectNumber?.includes(searchTerm)
       );
     }
 
@@ -394,7 +393,7 @@ const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
             <DashboardStats dashboardStats={dashboardStats} requests={requests} />
 
             {/* Process Tracking */}
-            <ProcessTracking requests={requests} />
+            <ProcessTracking requests={transformedRequests} />
           </>
         )}
         

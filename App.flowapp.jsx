@@ -5,6 +5,7 @@ import MagicLinkLoginModal from './src/components/MagicLinkLoginModal';
 import WithdrawalRequestTracker from './src/components/WithdrawalRequestTracker';
 import AuthCallback from './src/components/AuthCallback';
 import LogoutConfirmation from './src/components/LogoutConfirmation';
+import AuthWrapper from './src/components/AuthWrapper';
 import { useAuth } from './src/contexts/AuthContext';
 import { canPerformAction } from './src/utils/rolePermissions';
 
@@ -119,9 +120,13 @@ const AppContent = () => {
     navigate('/', { replace: true });
   };
 
-  // Validate permission for actions
+  // Validate permission for actions using enhanced permission system
   const validatePermission = (action, request, user) => {
-    return canPerformAction(user.role, action, request?.currentStage);
+    const currentStage = request?.current_stage || request?.currentStage;
+    const requestCreatedBy = request?.created_by || request?.createdBy;
+    const currentUserId = user?.id;
+
+    return canPerformAction(user.role, action, currentStage, requestCreatedBy, currentUserId);
   };
 
   // Get required role for action
@@ -171,7 +176,7 @@ const AppContent = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <AuthWrapper>
       <Routes>
         {/* Auth Callback Route - Must be first */}
         <Route
@@ -227,7 +232,7 @@ const AppContent = () => {
         isVisible={showLogoutConfirmation}
         onComplete={handleLogoutConfirmationComplete}
       />
-    </div>
+    </AuthWrapper>
   );
 };
 

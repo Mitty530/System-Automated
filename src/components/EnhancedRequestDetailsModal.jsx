@@ -9,6 +9,7 @@ import DecisionActionPanel from './DecisionActionPanel';
 import AuditTrailSection from './AuditTrailSection';
 import CommentsSection from './CommentsSection';
 import WorkflowStatusIndicator from './WorkflowStatusIndicator';
+import WorkflowProgressTracker from './WorkflowProgressTracker';
 import { formatCurrency, formatDate, formatFileSize } from '../utils/formatters';
 import { formatWorkflowStage } from '../utils/workflowFormatters';
 import { getRequestDetails, addComment, recordDecision } from '../services/requestService';
@@ -113,17 +114,18 @@ const EnhancedRequestDetailsModal = ({
   const getNextStage = (decisionType, currentStage) => {
     const stageMap = {
       'approve': {
-        'technical_review': 'regional_approval',
-        'regional_approval': 'core_banking',
-        'core_banking': 'disbursed'
+        'under_loan_review': 'under_operations_review',
+        'returned_for_modification': 'under_operations_review',
+        'under_operations_review': 'approved',
+        'approved': 'disbursed'
       },
       'reject': {
-        'technical_review': 'initial_review',
-        'regional_approval': 'technical_review',
-        'core_banking': 'regional_approval'
+        'under_loan_review': 'under_loan_review',
+        'under_operations_review': 'returned_for_modification',
+        'approved': 'under_operations_review'
       },
-      'send_to_operations': 'regional_approval',
-      'send_to_loan_admin': 'technical_review',
+      'send_to_operations': 'under_operations_review',
+      'send_to_loan_admin': 'returned_for_modification',
       'disbursed': 'disbursed'
     };
 
@@ -207,9 +209,11 @@ const EnhancedRequestDetailsModal = ({
   const getStatusBadgeVariant = (status) => {
     switch (status) {
       case 'disbursed': return 'success';
-      case 'core_banking': return 'warning';
-      case 'technical_review': return 'medium';
-      case 'initial_review': return 'default';
+      case 'approved': return 'warning';
+      case 'under_operations_review': return 'medium';
+      case 'under_loan_review': return 'default';
+      case 'returned_for_modification': return 'urgent';
+      case 'submitted': return 'default';
       default: return 'default';
     }
   };
@@ -484,9 +488,9 @@ const EnhancedRequestDetailsModal = ({
           {/* Workflow Tab */}
           {activeTab === 'workflow' && (
             <>
-              <WorkflowStatusIndicator
-                currentStage={displayRequest.current_stage || displayRequest.currentStage}
-                assignedTo={displayRequest.assigned_to || displayRequest.assignedTo}
+              <WorkflowProgressTracker
+                request={displayRequest}
+                auditEntries={displayDecisions}
                 users={users}
               />
               <DecisionActionPanel

@@ -36,7 +36,7 @@ const DashboardStats = ({ dashboardStats, requests = [] }) => {
     if (dashboardStats) {
       return {
         totalRequests: dashboardStats.totalRequests,
-        pendingRequests: dashboardStats.pendingReview + dashboardStats.regionalApproval,
+        pendingRequests: dashboardStats.pendingReview + (dashboardStats.operationsReview || 0) + (dashboardStats.returnedForModification || 0),
         completedRequests: dashboardStats.disbursed,
         urgentRequests: requests.filter(req => req.priority === 'urgent').length,
         totalValue: dashboardStats.totalAmount,
@@ -44,7 +44,7 @@ const DashboardStats = ({ dashboardStats, requests = [] }) => {
           ? Math.round(requests.reduce((sum, req) => sum + (req.processingDays || 0), 0) / requests.length)
           : 0,
         inProgress: requests.filter(req =>
-          req.currentStage === 'technical_review' || req.currentStage === 'regional_approval'
+          req.currentStage === 'under_loan_review' || req.currentStage === 'under_operations_review' || req.currentStage === 'returned_for_modification'
         ).length
       };
     }

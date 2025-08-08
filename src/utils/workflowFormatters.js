@@ -2,9 +2,11 @@ import { WorkflowStage, DecisionType, UserRole, CommentType } from '../data/enum
 
 export const formatWorkflowStage = (stage) => {
   const stageNames = {
-    [WorkflowStage.INITIAL_REVIEW]: 'Initial Review',
-    [WorkflowStage.TECHNICAL_REVIEW]: 'Technical Review', 
-    [WorkflowStage.CORE_BANKING]: 'Core Banking',
+    [WorkflowStage.SUBMITTED]: 'Submitted',
+    [WorkflowStage.UNDER_LOAN_REVIEW]: 'Under Loan Review',
+    [WorkflowStage.UNDER_OPERATIONS_REVIEW]: 'Under Operations Review',
+    [WorkflowStage.RETURNED_FOR_MODIFICATION]: 'Returned for Modification',
+    [WorkflowStage.APPROVED]: 'Approved',
     [WorkflowStage.DISBURSED]: 'Disbursed'
   };
   return stageNames[stage] || stage;
@@ -23,9 +25,10 @@ export const formatDecisionType = (decision) => {
 
 export const formatUserRole = (role) => {
   const roleNames = {
+    [UserRole.ADMIN]: 'Administrator',
     [UserRole.ARCHIVE_TEAM]: 'Archive Team',
-    [UserRole.LOAN_ADMIN]: 'Loan Administrator',
-    [UserRole.OPERATIONS_TEAM]: 'Operations Team', 
+    [UserRole.LOAN_ADMINISTRATOR]: 'Loan Administrator',
+    [UserRole.OPERATIONS_TEAM]: 'Operations Team',
     [UserRole.CORE_BANKING]: 'Core Banking'
   };
   return roleNames[role] || role;

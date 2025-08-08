@@ -30,14 +30,16 @@ const FiltersSection = ({
           />
         </div>
         
-        <Select 
-          value={filterStatus} 
+        <Select
+          value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
         >
           <option value="all">All Status</option>
-          <option value="initial_review">Initial Review</option>
-          <option value="technical_review">Technical Review</option>
-          <option value="core_banking">Core Banking</option>
+          <option value="submitted">Submitted</option>
+          <option value="under_loan_review">Under Loan Review</option>
+          <option value="under_operations_review">Under Operations Review</option>
+          <option value="returned_for_modification">Returned for Modification</option>
+          <option value="approved">Approved</option>
           <option value="disbursed">Disbursed</option>
         </Select>
         

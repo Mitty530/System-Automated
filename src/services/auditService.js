@@ -105,6 +105,27 @@ export const logRequestCreation = async (requestData) => {
 };
 
 /**
+ * Log request submission
+ * @param {object} requestData - Request data
+ */
+export const logRequestSubmission = async (requestData) => {
+  await logUserAction({
+    actionType: 'submit',
+    description: `Submitted withdrawal request: ${requestData.project_number} - Forwarded to loan administrator`,
+    resourceType: 'withdrawal_request',
+    resourceId: requestData.id?.toString(),
+    oldValues: {
+      stage: 'draft'
+    },
+    newValues: {
+      stage: 'under_loan_review',
+      status: 'Submitted by Archive Team - Under loan administrator review',
+      submitted_at: new Date().toISOString()
+    }
+  });
+};
+
+/**
  * Log request update
  * @param {string} requestId - Request ID
  * @param {object} oldData - Old request data
@@ -130,16 +151,46 @@ export const logRequestUpdate = async (requestId, oldData, newData) => {
  * @param {string} comments - Comments
  */
 export const logWorkflowProgress = async (requestId, fromStage, toStage, decision, comments) => {
+  // Create detailed description based on workflow transition
+  let description;
+  if (decision === 'approve') {
+    switch (toStage) {
+      case 'under_operations_review':
+        description = `Loan administrator approved request - Forwarded to operations team`;
+        break;
+      case 'approved':
+        description = `Operations team approved request - Ready for disbursement`;
+        break;
+      case 'disbursed':
+        description = `Core banking completed disbursement`;
+        break;
+      default:
+        description = `Approved request at ${fromStage} stage`;
+    }
+  } else if (decision === 'reject') {
+    if (fromStage === 'under_operations_review') {
+      description = `Operations team rejected request - Returned to loan administrator`;
+    } else {
+      description = `Rejected request at ${fromStage} stage`;
+    }
+  } else {
+    description = `Workflow transition: ${fromStage} → ${toStage}`;
+  }
+
   await logUserAction({
     actionType: 'workflow_progress',
-    description: `${decision === 'approve' ? 'Approved' : 'Rejected'} request at ${fromStage} stage`,
+    description: description,
     resourceType: 'withdrawal_request',
     resourceId: requestId.toString(),
-    oldValues: { stage: fromStage },
-    newValues: { 
-      stage: toStage, 
+    oldValues: {
+      stage: fromStage,
+      previous_status: `At ${fromStage} stage`
+    },
+    newValues: {
+      stage: toStage,
       decision: decision,
-      comments: comments 
+      comments: comments,
+      new_status: `Moved to ${toStage} stage`
     }
   });
 };
