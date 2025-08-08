@@ -46,6 +46,20 @@ export const validateField = (field, value) => {
       }
       return { isValid: true };
 
+    case 'amount': {
+      if (!value || value.trim() === '') {
+        return { isValid: false, message: 'Amount is required' };
+      }
+      const numericValue = parseFloat(value.replace(/[,\s]/g, ''));
+      if (isNaN(numericValue) || numericValue <= 0) {
+        return { isValid: false, message: 'Please enter a valid amount' };
+      }
+      if (numericValue > 100000000) { // 100 million limit
+        return { isValid: false, message: 'Amount cannot exceed 100,000,000' };
+      }
+      return { isValid: true, message: `✓ Valid amount` };
+    }
+
     case 'beneficiaryName':
       if (!value || value.trim().length < 2) {
         return { isValid: false, message: 'Beneficiary name is required' };

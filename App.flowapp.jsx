@@ -57,30 +57,10 @@ const AppContent = () => {
             }
 
           } else {
-            // Create optimized fallback profile
-            const isAdminGmail = user.email === 'Mamadouourydiallo819@gmail.com';
-            const isAdfdUser = user.email?.endsWith('@adfd.ae');
-
-            const fallbackProfile = {
-              id: user.id,
-              email: user.email,
-              name: user.email?.split('@')[0] || 'User',
-              role: isAdminGmail ? 'admin' : (isAdfdUser ? 'archive_team' : 'observer'),
-              department: isAdminGmail ? 'Administration' : (isAdfdUser ? 'Archive Team' : 'General'),
-              can_create_requests: true,
-              can_approve_reject: isAdminGmail,
-              can_disburse: isAdminGmail,
-              can_access_admin_dashboard: isAdminGmail,
-              can_override_workflow: isAdminGmail,
-              avatar: '👤',
-              created_at: user.created_at
-            };
-            setUserProfile(fallbackProfile);
-
-            // Redirect to dashboard if on landing page
-            if (location.pathname === '/') {
-              navigate('/dashboard', { replace: true });
-            }
+            // No database profile found - user must be added to database first
+            console.warn('❌ User not found in database:', user.email);
+            setUserProfile(null);
+            // Don't redirect - stay on landing page to show login
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);

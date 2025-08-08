@@ -1,21 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Input from './Input';
 import Select from './Select';
 
-const FormField = ({ 
-  label, 
-  type = 'text', 
-  value, 
-  onChange, 
-  placeholder, 
+const FormField = ({
+  label,
+  type = 'text',
+  value,
+  onChange,
+  placeholder,
   required = false,
   error,
   success,
   options = [],
+  suggestions = [],
   rows,
   className = '',
-  ...props 
+  ...props
 }) => {
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const handleChange = (e) => {
     if (onChange) {
       onChange(e.target.value);
@@ -67,6 +69,49 @@ const FormField = ({
           placeholder={placeholder}
           {...props}
         />
+      );
+    }
+
+    // For fields with suggestions, render input with datalist
+    if (suggestions && suggestions.length > 0) {
+      const datalistId = `suggestions-${label?.replace(/\s+/g, '-').toLowerCase()}`;
+
+      return (
+        <div className="relative">
+          <input
+            type={type}
+            value={value || ''}
+            onChange={handleChange}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            className={getFieldClasses()}
+            placeholder={placeholder}
+            list={datalistId}
+            {...props}
+          />
+          <datalist id={datalistId}>
+            {suggestions.map((suggestion, index) => (
+              <option key={index} value={suggestion} />
+            ))}
+          </datalist>
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+              {suggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none first:rounded-t-lg last:rounded-b-lg"
+                  onClick={() => {
+                    onChange(suggestion);
+                    setShowSuggestions(false);
+                  }}
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       );
     }
 

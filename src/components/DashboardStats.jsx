@@ -30,25 +30,40 @@ const StatsCard = ({ icon: Icon, label, value, color, desc, trend }) => (
   </Card>
 );
 
-const DashboardStats = ({ requests }) => {
+const DashboardStats = ({ dashboardStats, requests = [] }) => {
   const calculateStats = () => {
+    // Use provided stats if available, otherwise calculate from requests
+    if (dashboardStats) {
+      return {
+        totalRequests: dashboardStats.totalRequests,
+        pendingRequests: dashboardStats.pendingReview + dashboardStats.regionalApproval,
+        completedRequests: dashboardStats.disbursed,
+        urgentRequests: requests.filter(req => req.priority === 'urgent').length,
+        totalValue: dashboardStats.totalAmount,
+        avgProcessingTime: requests.length > 0
+          ? Math.round(requests.reduce((sum, req) => sum + (req.processingDays || 0), 0) / requests.length)
+          : 0,
+        inProgress: requests.filter(req =>
+          req.currentStage === 'technical_review' || req.currentStage === 'regional_approval'
+        ).length
+      };
+    }
+
+    // Fallback to calculating from requests array
     const totalRequests = requests.length;
     const pendingRequests = requests.filter(req => req.currentStage !== 'disbursed').length;
     const completedRequests = requests.filter(req => req.currentStage === 'disbursed').length;
     const urgentRequests = requests.filter(req => req.priority === 'urgent').length;
-    
-    const totalValue = requests.reduce((sum, req) => sum + req.amount, 0);
-    const avgProcessingTime = totalRequests > 0 
-      ? Math.round(requests.reduce((sum, req) => sum + req.processingDays, 0) / totalRequests)
+
+    const totalValue = requests.reduce((sum, req) => sum + (req.amount || 0), 0);
+    const avgProcessingTime = totalRequests > 0
+      ? Math.round(requests.reduce((sum, req) => sum + (req.processingDays || 0), 0) / totalRequests)
       : 0;
-    
-    // Calculate due soon (within 3 days)
-    const dueSoon = requests.filter(req => {
-      const valueDate = new Date(req.valueDate);
-      const today = new Date();
-      const diffDays = Math.ceil((valueDate - today) / (1000 * 60 * 60 * 24));
-      return diffDays <= 3 && req.currentStage !== 'disbursed';
-    }).length;
+
+    // Calculate in progress requests
+    const inProgress = requests.filter(req =>
+      req.currentStage === 'technical_review' || req.currentStage === 'regional_approval'
+    ).length;
 
     return {
       totalRequests,
@@ -57,7 +72,7 @@ const DashboardStats = ({ requests }) => {
       urgentRequests,
       totalValue,
       avgProcessingTime,
-      dueSoon
+      inProgress
     };
   };
 
@@ -88,13 +103,13 @@ const DashboardStats = ({ requests }) => {
       desc: 'Successfully processed',
       trend: { positive: true, value: '+8% completion rate' }
     },
-    { 
-      icon: AlertCircle, 
-      label: 'Due Soon', 
-      value: stats.dueSoon, 
-      color: 'from-red-500 to-pink-500', 
-      desc: 'Urgent attention',
-      trend: { positive: false, value: '3 critical items' }
+    {
+      icon: AlertCircle,
+      label: 'In Progress',
+      value: stats.inProgress,
+      color: 'from-orange-500 to-red-500',
+      desc: 'Active reviews',
+      trend: { positive: true, value: 'Processing smoothly' }
     },
     { 
       icon: DollarSign, 

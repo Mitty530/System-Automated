@@ -67,52 +67,72 @@ const AuditTrailSection = ({ auditEntries = [], isLoading = false }) => {
         </div>
       ) : (
         <div className="space-y-4">
-          {auditEntries.map((entry, index) => (
-            <div key={entry.id} className="audittimelineitem relative">
-              {/* Timeline connector */}
-              {index < auditEntries.length - 1 && (
-                <div className="absolute left-4 top-12 w-0.5 h-8 bg-gray-200"></div>
-              )}
-              
-              <div className="flex items-start space-x-4">
-                {/* Timeline dot */}
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white flex-shrink-0">
-                  {getActionIcon(entry.action)}
-                </div>
-                
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={getActionBadgeVariant(entry.action)}>
-                        {entry.action}
+          {auditEntries.map((entry, index) => {
+            // Handle both old format and new database format
+            const action = entry.decision_type || entry.action || 'Unknown Action';
+            const timestamp = entry.created_at || entry.timestamp;
+            const userName = entry.user_profiles?.full_name || entry.userName || 'Unknown User';
+            const userRole = entry.user_profiles?.role || entry.userRole || 'User';
+            const comment = entry.comment || entry.details || '';
+            const fromStage = entry.from_stage;
+            const toStage = entry.to_stage;
+
+            // Create a more descriptive action text for decisions
+            let displayAction = action;
+            if (entry.decision_type) {
+              displayAction = `${action.charAt(0).toUpperCase() + action.slice(1)}`;
+              if (fromStage && toStage && fromStage !== toStage) {
+                displayAction += ` (${fromStage.replace('_', ' ')} → ${toStage.replace('_', ' ')})`;
+              }
+            }
+
+            return (
+              <div key={entry.id || index} className="audittimelineitem relative">
+                {/* Timeline connector */}
+                {index < auditEntries.length - 1 && (
+                  <div className="absolute left-4 top-12 w-0.5 h-8 bg-gray-200"></div>
+                )}
+
+                <div className="flex items-start space-x-4">
+                  {/* Timeline dot */}
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white flex-shrink-0">
+                    {getActionIcon(displayAction)}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <Badge variant={getActionBadgeVariant(displayAction)}>
+                          {displayAction}
+                        </Badge>
+                        <span className="text-sm text-gray-500">
+                          {formatTimeAgo(timestamp)}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {formatDateTime(timestamp)}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 mb-2">
+                      <User className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm font-medium text-gray-900">{userName}</span>
+                      <Badge variant="default" className="text-xs">
+                        {formatUserRole(userRole)}
                       </Badge>
-                      <span className="text-sm text-gray-500">
-                        {formatTimeAgo(entry.timestamp)}
-                      </span>
                     </div>
-                    <div className="text-xs text-gray-400">
-                      {formatDateTime(entry.timestamp)}
-                    </div>
+
+                    {comment && (
+                      <div className="bg-gray-50 rounded-lg p-3 mt-2">
+                        <p className="text-sm text-gray-700">{comment}</p>
+                      </div>
+                    )}
                   </div>
-                  
-                  <div className="flex items-center space-x-2 mb-2">
-                    <User className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm font-medium text-gray-900">{entry.userName}</span>
-                    <Badge variant="default" className="text-xs">
-                      {formatUserRole(entry.userRole)}
-                    </Badge>
-                  </div>
-                  
-                  {entry.comment && (
-                    <div className="bg-gray-50 rounded-lg p-3 mt-2">
-                      <p className="text-sm text-gray-700">{entry.comment}</p>
-                    </div>
-                  )}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </Card>

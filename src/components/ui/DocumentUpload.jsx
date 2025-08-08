@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, FileText, AlertCircle } from 'lucide-react';
 import Button from './Button';
+import { validateFile } from '../../utils/fileUpload';
 
 const DocumentUpload = ({ 
   documents = [], 
@@ -18,16 +19,11 @@ const DocumentUpload = ({
     const validFiles = [];
 
     Array.from(files).forEach((file) => {
-      // Check file size
-      if (file.size > maxFileSize) {
-        newErrors.push(`${file.name}: File size exceeds ${Math.round(maxFileSize / 1024 / 1024)}MB limit`);
-        return;
-      }
+      // Use the validation utility
+      const validation = validateFile(file);
 
-      // Check file type
-      const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-      if (!acceptedTypes.includes(fileExtension)) {
-        newErrors.push(`${file.name}: File type not supported`);
+      if (!validation.isValid) {
+        newErrors.push(`${file.name}: ${validation.errors.join(', ')}`);
         return;
       }
 

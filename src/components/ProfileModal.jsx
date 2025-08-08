@@ -81,14 +81,18 @@ const ProfileModal = ({ isOpen, onClose, currentUser }) => {
                         <User className="w-4 h-4 text-green-600" />
                       </div>
                       <div className="bg-green-100 text-green-800 px-3 py-1 rounded-lg text-sm font-medium">
-                        Full Access User
+                        {currentUser.role === 'admin' ? 'Administrator' :
+                         currentUser.role === 'archive_team' ? 'Archive Team' :
+                         currentUser.role === 'operations_team' ? 'Operations Team' :
+                         currentUser.role === 'core_banking' ? 'Core Banking' :
+                         'User'}
                       </div>
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
                     <Input
-                      value="Operations Department"
+                      value={currentUser.department || 'Not specified'}
                       readOnly
                       className="bg-gray-50"
                     />
@@ -98,7 +102,7 @@ const ProfileModal = ({ isOpen, onClose, currentUser }) => {
                     <div className="flex items-center">
                       <MapPin className="w-4 h-4 text-gray-400 mr-2" />
                       <Input
-                        value="Abu Dhabi Main Office"
+                        value={currentUser.regional_assignment || 'Abu Dhabi Main Office'}
                         readOnly
                         className="bg-gray-50"
                       />

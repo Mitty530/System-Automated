@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Calendar, 
-  Globe, 
-  FileText, 
-  DollarSign, 
-  Building, 
+import {
+  Calendar,
+  Globe,
+  FileText,
+  DollarSign,
+  Building,
   Upload,
   Save,
   Loader
@@ -14,15 +14,19 @@ import Button from './ui/Button';
 import FormField from './ui/FormField';
 import FormSection from './ui/FormSection';
 import DocumentUpload from './ui/DocumentUpload';
-import { 
+import {
   ALL_COUNTRIES,
-  CURRENCY_OPTIONS, 
-  DEFAULT_FORM_DATA 
+  CURRENCY_OPTIONS,
+  DEFAULT_FORM_DATA
 } from '../data/formConstants';
 import {
-  validateField,
-  generateSequentialNumbers
+  validateField
 } from '../utils/formValidation';
+import { createRequestWithWorkflow } from '../utils/workflowManager';
+import { uploadMultipleFiles, saveFileMetadata } from '../utils/fileUpload';
+import { getRegionForCountry, getRegionalTeamForCountry } from '../utils/regionalMapping';
+import { supabase } from '../lib/supabase';
+import { logRequestCreation, logFileUpload, logPageView } from '../services/auditService';
 
 const CreateRequestModal = ({ isOpen, onClose, onCreateRequest }) => {
   const [formData, setFormData] = useState({
@@ -45,17 +49,19 @@ const CreateRequestModal = ({ isOpen, onClose, onCreateRequest }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState([]);
 
-  // Auto-generate project and reference numbers when modal opens
+  // Initialize form with current date when modal opens and log page view
   useEffect(() => {
-    if (isOpen && !formData.projectNumber) {
-      const { projectNumber, referenceNumber } = generateSequentialNumbers();
-      setFormData(prev => ({
-        ...prev,
-        projectNumber,
-        referenceNumber
-      }));
+    if (isOpen) {
+      if (!formData.date) {
+        setFormData(prev => ({
+          ...prev,
+          date: new Date().toISOString().split('T')[0]
+        }));
+      }
+      // Log modal opening
+      logPageView('Create Request Modal', { action: 'opened' });
     }
-  }, [isOpen]);
+  }, [isOpen, formData.date]);
 
   // Reset form when modal closes
   useEffect(() => {
@@ -78,15 +84,59 @@ const CreateRequestModal = ({ isOpen, onClose, onCreateRequest }) => {
     }
   }, [isOpen]);
 
+  // Format number with commas for display
+  const formatAmountDisplay = (value) => {
+    if (!value) return '';
+    // Remove any non-digit characters except decimal point
+    const numericValue = value.toString().replace(/[^\d.]/g, '');
+
+    // Handle multiple decimal points - keep only the first one
+    const decimalIndex = numericValue.indexOf('.');
+    const cleanValue = decimalIndex >= 0
+      ? numericValue.substring(0, decimalIndex + 1) + numericValue.substring(decimalIndex + 1).replace(/\./g, '')
+      : numericValue;
+
+    // Split by decimal point
+    const parts = cleanValue.split('.');
+    // Add commas to the integer part
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    // Return formatted value (limit to 2 decimal places)
+    return parts.length > 1 ? `${parts[0]}.${parts[1].slice(0, 2)}` : parts[0];
+  };
+
+  // Get numeric value without commas for storage
+  const getNumericAmount = (value) => {
+    if (!value) return '';
+    return value.toString().replace(/[^\d.]/g, '');
+  };
+
+  // Format amount with currency for display
+  const formatAmountWithCurrency = (amount, currency) => {
+    if (!amount || !currency) return '';
+    const numericAmount = getNumericAmount(amount);
+    if (!numericAmount) return '';
+
+    const formattedAmount = formatAmountDisplay(numericAmount);
+    return `${currency} ${formattedAmount}`;
+  };
+
   const handleInputChange = (field, value) => {
     setFormData(prev => {
-      const newFormData = { ...prev, [field]: value };
-      
-      // Validate the field
-      const fieldValidation = validateField(field, value, newFormData);
-      setValidation(prevValidation => ({ 
-        ...prevValidation, 
-        [field]: fieldValidation 
+      let processedValue = value;
+
+      // Special handling for amount field
+      if (field === 'amount') {
+        // Store the numeric value (without commas)
+        processedValue = getNumericAmount(value);
+      }
+
+      const newFormData = { ...prev, [field]: processedValue };
+
+      // Validate the field using the numeric value
+      const fieldValidation = validateField(field, processedValue, newFormData);
+      setValidation(prevValidation => ({
+        ...prevValidation,
+        [field]: fieldValidation
       }));
 
       return newFormData;
@@ -132,30 +182,89 @@ const CreateRequestModal = ({ isOpen, onClose, onCreateRequest }) => {
         return;
       }
 
-      // Convert form data to request format
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('User not authenticated');
+      }
+
+      console.log('Current user:', user);
+      console.log('User ID:', user.id);
+
+      // Validate country and region
+      const region = getRegionForCountry(formData.country);
+      if (!region) {
+        throw new Error(`Unsupported country: ${formData.country}`);
+      }
+
+      // Create request in database with workflow
+      console.log('Creating request with data:', formData);
       const requestData = {
-        // Core fields
-        date: formData.date,
         projectNumber: formData.projectNumber,
-        country: formData.country,
         referenceNumber: formData.referenceNumber,
+        country: formData.country,
         beneficiaryName: formData.beneficiaryName,
-        requestedAmount: formData.amount,
+        amount: formData.amount,
         currency: formData.currency,
-        
-        // Additional sections
-        projectName: formData.projectDetails.split('\n')[0] || 'New Project', // Use first line as project name
-        projectDescription: formData.projectDetails,
-        paymentPurpose: formData.referenceDocumentation,
-        documents: formData.documents,
-        
-        // Auto-populated fields for system compatibility
-        valueDate: formData.date,
-        contractReference: formData.referenceNumber
+        date: formData.date,
+        projectDetails: formData.projectDetails,
+        referenceDocumentation: formData.referenceDocumentation
       };
 
-      await onCreateRequest(requestData);
-      
+      console.log('Calling createRequestWithWorkflow...');
+      const newRequest = await createRequestWithWorkflow(requestData, user.id);
+      console.log('Request created successfully:', newRequest);
+
+      // Log request creation
+      await logRequestCreation(newRequest);
+
+      // Upload files if any
+      console.log('Checking for documents to upload...');
+      console.log('formData.documents:', formData.documents);
+      console.log('formData.documents.length:', formData.documents?.length);
+
+      if (formData.documents && formData.documents.length > 0) {
+        console.log('Processing documents:', formData.documents);
+        const fileObjects = formData.documents.map(doc => doc.file).filter(Boolean);
+        console.log('File objects to upload:', fileObjects);
+
+        if (fileObjects.length > 0) {
+          try {
+            const uploadResult = await uploadMultipleFiles(fileObjects, newRequest.id);
+            console.log('Upload result:', uploadResult);
+
+            if (uploadResult.success && uploadResult.files.length > 0) {
+              // Save file metadata to database and log uploads
+              for (const fileMetadata of uploadResult.files) {
+                try {
+                  console.log('Saving metadata for file:', fileMetadata);
+                  await saveFileMetadata(newRequest.id, fileMetadata, user.id);
+                  await logFileUpload(newRequest.id, fileMetadata.fileName, fileMetadata.fileSize);
+                  console.log('Successfully saved metadata for:', fileMetadata.fileName);
+                } catch (metadataError) {
+                  console.error('Failed to save metadata for file:', fileMetadata.fileName, metadataError);
+                }
+              }
+            }
+
+            if (uploadResult.errors.length > 0) {
+              console.warn('Some files failed to upload:', uploadResult.errors);
+            }
+          } catch (uploadError) {
+            console.error('File upload process failed:', uploadError);
+          }
+        }
+      }
+
+      // Get regional team info for display
+      const regionalTeam = getRegionalTeamForCountry(formData.country);
+
+      // Call the parent callback with the created request
+      await onCreateRequest({
+        ...newRequest,
+        regionalTeam: regionalTeam?.name || 'Unknown Region'
+      });
+
       // Close modal after short delay
       setTimeout(() => {
         onClose();
@@ -163,7 +272,19 @@ const CreateRequestModal = ({ isOpen, onClose, onCreateRequest }) => {
 
     } catch (error) {
       console.error('Form submission error:', error);
-      setErrors([error instanceof Error ? error.message : 'Failed to submit request']);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+
+      // More specific error messages
+      let errorMessage = 'Failed to submit request';
+      if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setErrors([errorMessage]);
       setIsSubmitting(false);
     }
   };
@@ -217,19 +338,22 @@ const CreateRequestModal = ({ isOpen, onClose, onCreateRequest }) => {
                 type="date"
                 value={formData.date}
                 onChange={(value) => handleInputChange('date', value)}
+                placeholder="YYYY-MM-DD or select date"
                 required
-                className="bg-gray-50"
-                readOnly
               />
 
               <FormField
                 label="Project Number"
                 value={formData.projectNumber}
                 onChange={(value) => handleInputChange('projectNumber', value)}
-                placeholder="Auto-generated project number"
+                placeholder="Enter project number (e.g., ADFD-2024-001)"
                 required
-                className="bg-gray-50 font-mono"
-                readOnly
+                className="font-mono"
+                suggestions={[
+                  `ADFD-${new Date().getFullYear()}-001`,
+                  `ADFD-${new Date().getFullYear()}-002`,
+                  `ADFD-${new Date().getFullYear()}-003`
+                ]}
               />
 
               <FormField
@@ -247,10 +371,14 @@ const CreateRequestModal = ({ isOpen, onClose, onCreateRequest }) => {
                 label="Reference Number"
                 value={formData.referenceNumber}
                 onChange={(value) => handleInputChange('referenceNumber', value)}
-                placeholder="Auto-generated reference"
+                placeholder="Enter reference number (e.g., WR-2024-001)"
                 required
-                className="bg-gray-50 font-mono"
-                readOnly
+                className="font-mono"
+                suggestions={[
+                  `WR-${new Date().getFullYear()}-001`,
+                  `WR-${new Date().getFullYear()}-002`,
+                  `REF-${new Date().getFullYear()}-001`
+                ]}
               />
 
               <FormField
@@ -263,15 +391,23 @@ const CreateRequestModal = ({ isOpen, onClose, onCreateRequest }) => {
               />
 
               <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  label="Amount"
-                  value={formData.amount}
-                  onChange={(value) => handleInputChange('amount', value)}
-                  placeholder="Enter amount"
-                  required
-                  error={validation.amount && !validation.amount.isValid ? validation.amount.message : null}
-                  success={validation.amount?.isValid && validation.amount.message ? validation.amount.message : null}
-                />
+                <div>
+                  <FormField
+                    label="Amount"
+                    value={formatAmountDisplay(formData.amount)}
+                    onChange={(value) => handleInputChange('amount', value)}
+                    placeholder="Enter amount (e.g., 1,000,000)"
+                    required
+                    error={validation.amount && !validation.amount.isValid ? validation.amount.message : null}
+                    success={validation.amount?.isValid && validation.amount.message ? validation.amount.message : null}
+                    className="font-mono text-right"
+                  />
+                  {formData.amount && (
+                    <div className="mt-1 text-sm text-blue-600 font-medium">
+                      {formatAmountWithCurrency(formData.amount, formData.currency)}
+                    </div>
+                  )}
+                </div>
 
                 <FormField
                   label="Currency"

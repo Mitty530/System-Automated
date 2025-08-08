@@ -58,9 +58,8 @@ src/
 │   └── SimpleErrorBoundary.jsx # Error boundary
 ├── contexts/                   # React contexts
 │   └── AuthContext.jsx         # Authentication context
-├── data/                       # Data and mock data
-│   ├── appMockData.js          # Application mock data
-│   ├── withdrawalMockData.js   # Withdrawal mock data
+├── data/                       # Data and configuration
+│   ├── formConstants.js        # Form configuration constants
 │   └── enums.js                # System enumerations
 ├── hooks/                      # Custom React hooks
 │   └── usePerformance.js       # Performance monitoring

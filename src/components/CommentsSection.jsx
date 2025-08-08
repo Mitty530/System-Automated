@@ -119,44 +119,48 @@ const CommentsSection = ({
       ) : (
         <div className="space-y-4">
           {comments.map((comment) => {
-            const typeBadge = getCommentTypeBadge(comment.type);
-            
+            const typeBadge = getCommentTypeBadge(comment.comment_type || comment.type);
+            const userName = comment.user_profiles?.full_name || comment.userName || 'Unknown User';
+            const userRole = comment.user_profiles?.role || comment.userRole || 'User';
+            const commentText = comment.comment_text || comment.comment || '';
+            const timestamp = comment.created_at || comment.timestamp;
+
             return (
-              <div 
-                key={comment.id} 
-                className={`p-4 rounded-xl ${getCommentTypeClass(comment.type)}`}
+              <div
+                key={comment.id}
+                className={`p-4 rounded-xl ${getCommentTypeClass(comment.comment_type || comment.type)}`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-gradient-to-r from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white flex-shrink-0">
                       <span className="text-sm font-medium">
-                        {comment.userName?.charAt(0) || 'U'}
+                        {userName?.charAt(0) || 'U'}
                       </span>
                     </div>
                     <div>
                       <div className="flex items-center space-x-2">
                         <span className="text-sm font-medium text-gray-900">
-                          {comment.userName}
+                          {userName}
                         </span>
                         <Badge variant="default" className="text-xs">
-                          {formatUserRole(comment.userRole)}
+                          {formatUserRole(userRole)}
                         </Badge>
                         <Badge variant={typeBadge.variant} className="text-xs">
                           {typeBadge.label}
                         </Badge>
                       </div>
                       <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
-                        <span>{formatTimeAgo(comment.timestamp)}</span>
+                        <span>{formatTimeAgo(timestamp)}</span>
                         <span>•</span>
-                        <span>{formatDateTime(comment.timestamp)}</span>
+                        <span>{formatDateTime(timestamp)}</span>
                       </div>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="ml-11">
                   <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                    {comment.comment}
+                    {commentText}
                   </p>
                 </div>
               </div>

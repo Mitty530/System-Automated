@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import DashboardStats from './DashboardStats';
 import ProcessTracking from './ProcessTracking';
@@ -7,21 +7,117 @@ import RequestsTable from './RequestsTable';
 import CreateRequestModal from './CreateRequestModal';
 import EnhancedRequestDetailsModal from './EnhancedRequestDetailsModal';
 import ProfileModal from './ProfileModal';
-import { mockQuery } from '../data/appMockData';
-import { mockQuery as workflowMockQuery } from '../data/withdrawalMockData';
 import { DecisionType, CommentType, WorkflowStage } from '../data/enums';
+import { fetchRequests, getDashboardStats } from '../services/requestService';
+import { logPageView, logFilter } from '../services/auditService';
 
 const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showCreateRequest, setShowCreateRequest] = useState(false);
   const [showRequestDetails, setShowRequestDetails] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [requests, setRequests] = useState(mockQuery.requests);
-  const [auditTrail, setAuditTrail] = useState(workflowMockQuery.auditTrail);
-  const [comments, setComments] = useState(workflowMockQuery.comments);
+  const [requests, setRequests] = useState([]);
+  const [auditTrail, setAuditTrail] = useState([]);
+  const [comments, setComments] = useState([]);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCountry, setFilterCountry] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [dashboardStats, setDashboardStats] = useState({
+    totalRequests: 0,
+    pendingReview: 0,
+    regionalApproval: 0,
+    coreBanking: 0,
+    disbursed: 0,
+    totalAmount: 0,
+    averageAmount: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+
+
+  // Load data on component mount and when filters change
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Build filters
+        const filters = {};
+        if (filterStatus !== 'all') {
+          filters.stage = filterStatus;
+        }
+        if (filterCountry !== 'all') {
+          filters.country = filterCountry;
+        }
+
+        // Load requests and stats
+        const [requestsData, statsData] = await Promise.all([
+          fetchRequests(filters),
+          getDashboardStats(currentUser?.id)
+        ]);
+
+        // Transform data for display
+        const transformedRequests = requestsData.map(request => ({
+          id: request.id,
+          projectNumber: request.project_number,
+          refNumber: request.ref_number,
+          beneficiaryName: request.beneficiary_name,
+          country: request.country,
+          amount: parseFloat(request.amount),
+          currency: request.currency,
+          valueDate: request.value_date,
+          currentStage: request.current_stage,
+          status: request.status,
+          priority: request.priority,
+          assignedTo: request.assigned_to,
+          createdBy: request.created_by,
+          createdAt: request.created_at,
+          updatedAt: request.updated_at,
+          processingDays: request.processing_days || 0,
+          projectDetails: request.project_details,
+          referenceDocumentation: request.reference_documentation,
+          createdByProfile: request.created_by_profile,
+          assignedToProfile: request.assigned_to_profile,
+          documents: request.request_documents || []
+        }));
+
+        setRequests(transformedRequests);
+        setDashboardStats(statsData);
+
+        // Log filter application if filters are active
+        if (filterStatus !== 'all' || filterCountry !== 'all') {
+          await logFilter(
+            { status: filterStatus, country: filterCountry },
+            transformedRequests.length
+          );
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setError(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+
+    // Log page view on mount
+    if (currentUser) {
+      logPageView('Dashboard', {
+        filterStatus,
+        filterCountry,
+        user_role: currentUser.role
+      });
+    }
+  }, [filterStatus, filterCountry, currentUser]); // Clean dependencies
+
+  const handleRetry = () => {
+    // Trigger a re-render by updating a state that's in the useEffect dependencies
+    setError(null);
+    // The useEffect will automatically re-run due to the dependency array
+  };
 
   const handleProfileClick = () => {
     setShowProfileModal(true);
@@ -175,42 +271,40 @@ const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
     setComments(prev => [...prev, newComment]);
   };
 
-  const handleCreateRequest = async (formData) => {
+  const handleCreateRequest = async (requestData) => {
     try {
-      // Convert form data to request format
-      const amount = parseFloat(formData.requestedAmount.replace(/[,\s]/g, ''));
-      
-      const newRequest = {
-        id: Date.now(),
-        projectNumber: formData.projectNumber,
-        refNumber: formData.referenceNumber,
-        beneficiaryName: formData.beneficiaryName,
-        country: formData.country,
-        amount: amount,
-        currency: formData.currency,
-        valueDate: formData.date,
-        currentStage: 'initial_review',
-        status: `New request - ${formData.beneficiaryName} - Pending initial review`,
-        priority: 'medium',
-        assignedTo: 2, // Default to admin
-        createdBy: currentUser?.id || 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        processingDays: 0,
-        // Include additional data from form
-        projectDetails: formData.projectDetails,
-        referenceDocumentation: formData.referenceDocumentation,
-        documents: formData.documents || []
+      // The request has already been created in the database by CreateRequestModal
+      // Just add it to the local state for immediate UI update
+      const displayRequest = {
+        id: requestData.id,
+        projectNumber: requestData.project_number,
+        refNumber: requestData.ref_number,
+        beneficiaryName: requestData.beneficiary_name,
+        country: requestData.country,
+        amount: requestData.amount,
+        currency: requestData.currency,
+        valueDate: requestData.value_date,
+        currentStage: requestData.current_stage,
+        status: requestData.status,
+        priority: requestData.priority,
+        assignedTo: requestData.assigned_to,
+        createdBy: requestData.created_by,
+        createdAt: requestData.created_at,
+        updatedAt: requestData.updated_at,
+        processingDays: requestData.processing_days || 0,
+        projectDetails: requestData.project_details,
+        referenceDocumentation: requestData.reference_documentation,
+        regionalTeam: requestData.regionalTeam
       };
 
       // Add to requests list
-      setRequests(prev => [newRequest, ...prev]);
-      
-      alert('✅ Request created successfully!');
-      return newRequest.id;
+      setRequests(prev => [displayRequest, ...prev]);
+
+      alert(`✅ Request created successfully! Assigned to ${requestData.regionalTeam || 'Regional Team'}`);
+      return requestData.id;
     } catch (error) {
-      console.error('Error creating request:', error);
-      throw new Error('Failed to create withdrawal request');
+      console.error('Error handling created request:', error);
+      throw new Error('Failed to process withdrawal request');
     }
   };
 
@@ -263,11 +357,46 @@ const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
       />
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading requests...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex">
+              <div className="text-red-600">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Error loading data</h3>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
+                <button
+                  onClick={handleRetry}
+                  className="text-sm text-red-800 underline mt-2 hover:text-red-900"
+                >
+                  Try again
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Dashboard Stats */}
-        <DashboardStats requests={requests} />
-        
-        {/* Process Tracking */}
-        <ProcessTracking requests={requests} />
+        {!isLoading && !error && (
+          <>
+            <DashboardStats dashboardStats={dashboardStats} requests={requests} />
+
+            {/* Process Tracking */}
+            <ProcessTracking requests={requests} />
+          </>
+        )}
         
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Withdrawal Request Management</h2>
@@ -307,7 +436,7 @@ const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
         currentUser={currentUser}
         auditTrail={auditTrail.filter(entry => entry.requestId === selectedRequest?.id)}
         comments={comments.filter(comment => comment.requestId === selectedRequest?.id)}
-        users={mockQuery.users}
+        users={{}}
         onDecisionMade={handleDecisionMade}
         onAddComment={handleAddComment}
       />

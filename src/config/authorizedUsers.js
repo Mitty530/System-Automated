@@ -3,22 +3,13 @@
 
 // Authorized email domains
 const AUTHORIZED_DOMAINS = [
-  'adfd.ae',
-  'company.com' // For testing with mock data emails
+  'adfd.ae'
 ]
 
 // Specific authorized email addresses (exceptions to domain rule)
 const AUTHORIZED_EMAILS = [
-  // Test users for development
-  'sarah@company.com',
-  'john@company.com', 
-  'mike@company.com',
-  'lisa@company.com',
-  // Add specific ADFD team members here
-  'admin@adfd.ae',
-  'operations@adfd.ae',
-  'banking@adfd.ae',
-  'archive@adfd.ae'
+  // Admin exception
+  'Mamadouourydiallo819@gmail.com'
 ]
 
 /**
@@ -58,40 +49,8 @@ export const validateEmailDomain = (email) => {
 }
 
 /**
- * Get the user's role based on their email
- * This is a temporary mapping until we have proper user profiles
- * @param {string} email - Email address
- * @returns {string} - User role
+ * Note: User roles are now retrieved from the Supabase database only.
+ * No fallback role assignment is performed.
  */
-export const getUserRoleFromEmail = (email) => {
-  const normalizedEmail = email.toLowerCase().trim()
-  
-  // Map specific emails to roles (for testing)
-  const emailRoleMap = {
-    'sarah@company.com': 'archive_team',
-    'john@company.com': 'loan_admin', 
-    'mike@company.com': 'operations_team',
-    'lisa@company.com': 'core_banking'
-  }
-
-  // Check specific mapping first
-  if (emailRoleMap[normalizedEmail]) {
-    return emailRoleMap[normalizedEmail]
-  }
-
-  // Default role assignment based on email patterns
-  if (normalizedEmail.includes('admin')) {
-    return 'loan_admin'
-  } else if (normalizedEmail.includes('operations') || normalizedEmail.includes('ops')) {
-    return 'operations_team'
-  } else if (normalizedEmail.includes('banking') || normalizedEmail.includes('bank')) {
-    return 'core_banking'
-  } else if (normalizedEmail.includes('archive')) {
-    return 'archive_team'
-  }
-
-  // Default to observer role for unknown users
-  return 'observer'
-}
 
 export { AUTHORIZED_DOMAINS, AUTHORIZED_EMAILS }
