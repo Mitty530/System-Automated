@@ -18,6 +18,34 @@ html, body {
 }
 
 /* Custom animations for ADFD system */
+
+/* Toast animations */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* Notification dropdown z-index fix */
+.notification-dropdown {
+  z-index: 999999 !important;
+  position: relative;
+}
+
+.notification-dropdown-menu {
+  z-index: 999999 !important;
+  position: absolute;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
 @keyframes fadeIn {
   from {
     opacity: 0;

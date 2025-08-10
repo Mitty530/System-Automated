@@ -8,7 +8,7 @@ import CreateRequestModal from './CreateRequestModal';
 import EnhancedRequestDetailsModal from './EnhancedRequestDetailsModal';
 import ProfileModal from './ProfileModal';
 import { DecisionType, CommentType, WorkflowStage } from '../data/enums';
-import { fetchRequests, getDashboardStats } from '../services/requestService';
+
 import { logPageView, logFilter } from '../services/auditService';
 import { useRealtimeRequests, useRealtimeDashboardStats } from '../hooks/useRealtimeRequests';
 
@@ -90,7 +90,7 @@ const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
         user_role: currentUser.role
       });
     }
-  }, [currentUser]);
+  }, [currentUser, filterStatus, filterCountry]);
 
   // Log filter usage for analytics
   useEffect(() => {
@@ -111,7 +111,6 @@ const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
   }, [filterStatus, filterCountry, requests.length]);
 
   const handleRetry = () => {
-    setError(null);
     refreshRequests();
   };
 
@@ -142,12 +141,12 @@ const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
         break;
       case 'delete':
         if (window.confirm('Are you sure you want to delete this request?')) {
-          setRequests(prev => prev.filter(req => req.id !== request.id));
+          // Delete functionality would be handled by the real-time hook
           alert('✅ Request deleted successfully!');
         }
         break;
       default:
-        console.log('Invalid action requested.');
+        // Invalid action requested
     }
   };
 
@@ -162,97 +161,69 @@ const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
     });
   };
 
-  const handleDecisionMade = (decision, comment) => {
-    console.log('Decision made:', decision, 'Comment:', comment);
-    
-    // Add to audit trail
-    const newAuditEntry = {
-      id: auditTrail.length + 1,
-      requestId: selectedRequest.id,
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userRole: currentUser.role,
-      action: `Decision: ${decision}`,
-      comment: comment,
-      timestamp: new Date().toISOString()
-    };
-    
-    setAuditTrail(prev => [...prev, newAuditEntry]);
-    
-    // Add decision comment
-    const newComment = {
-      id: comments.length + 1,
-      requestId: selectedRequest.id,
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userRole: currentUser.role,
-      type: CommentType.DECISION,
-      comment: comment,
-      timestamp: new Date().toISOString()
-    };
-    
-    setComments(prev => [...prev, newComment]);
+  const handleDecisionMade = async (decision, comment) => {
 
-    // Update request status based on decision
-    const updatedRequests = requests.map(req => {
-      if (req.id === selectedRequest.id) {
-        let newStage = req.currentStage;
-        let newStatus = req.status;
-        let newAssignedTo = req.assignedTo;
+    try {
+      // Import workflow manager
+      const { progressWorkflow } = await import('../utils/workflowManager');
 
-        switch (decision) {
-          case DecisionType.APPROVE:
-            if (req.currentStage === WorkflowStage.INITIAL_REVIEW) {
-              newStage = WorkflowStage.TECHNICAL_REVIEW;
-              newAssignedTo = 3; // Operations team
-              newStatus = 'Approved by Loan Admin, forwarded to Operations team';
-            } else if (req.currentStage === WorkflowStage.TECHNICAL_REVIEW) {
-              newStage = WorkflowStage.CORE_BANKING;
-              newAssignedTo = 4; // Core banking
-              newStatus = 'Approved by Operations, forwarded to Core Banking';
-            }
-            break;
-          
-          case DecisionType.REJECT:
-            newStatus = `Rejected: ${comment}`;
-            break;
-          
-          case DecisionType.DISBURSED:
-            newStage = WorkflowStage.DISBURSED;
-            newStatus = 'Funds successfully disbursed';
-            break;
-          
-          case DecisionType.SEND_TO_OPERATIONS:
-            newStage = WorkflowStage.TECHNICAL_REVIEW;
-            newAssignedTo = 3;
-            newStatus = 'Sent to Operations team for review';
-            break;
-          
-          case DecisionType.SEND_TO_LOAN_ADMIN:
-            newStage = WorkflowStage.INITIAL_REVIEW;
-            newAssignedTo = 2;
-            newStatus = `Returned to Loan Admin: ${comment}`;
-            break;
+      // Process the workflow transition (this will trigger notifications)
+      const result = await progressWorkflow(
+        selectedRequest.id,
+        decision,
+        comment,
+        currentUser.id
+      );
+
+      if (result.success) {
+
+        // Add to audit trail
+        const newAuditEntry = {
+          id: auditTrail.length + 1,
+          requestId: selectedRequest.id,
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userRole: currentUser.role,
+          action: `Decision: ${decision}`,
+          comment: comment,
+          timestamp: new Date().toISOString()
+        };
+
+        setAuditTrail(prev => [...prev, newAuditEntry]);
+
+        // Add decision comment
+        const newComment = {
+          id: comments.length + 1,
+          requestId: selectedRequest.id,
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userRole: currentUser.role,
+          type: CommentType.DECISION,
+          comment: comment,
+          timestamp: new Date().toISOString()
+        };
+
+        setComments(prev => [...prev, newComment]);
+
+        // Update the selected request with the result
+        setSelectedRequest(result.request);
+
+        // Refresh requests to get latest data
+        if (refreshRequests) {
+          refreshRequests();
         }
 
-        return {
-          ...req,
-          currentStage: newStage,
-          status: newStatus,
-          assignedTo: newAssignedTo,
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return req;
-    });
 
-    setRequests(updatedRequests);
-    
-    // Update selected request
-    const updatedRequest = updatedRequests.find(req => req.id === selectedRequest.id);
-    setSelectedRequest(updatedRequest);
-    
-    alert(`Decision "${decision}" has been recorded successfully!`);
+      } else {
+        throw new Error(result.error || 'Failed to process workflow transition');
+      }
+    } catch (error) {
+      console.error('❌ Failed to record decision:', error);
+      alert(`Failed to record decision: ${error.message}. Please try again.`);
+      return;
+    }
+
+
   };
 
   const handleAddComment = async (comment, type) => {
@@ -272,38 +243,44 @@ const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
 
   const handleCreateRequest = async (requestData) => {
     try {
+      // Validate that we have the required data
+      if (!requestData || !requestData.id) {
+        console.error('Invalid request data received:', requestData);
+        throw new Error('Invalid request data received');
+      }
+
       // The request has already been created in the database by CreateRequestModal
-      // Just add it to the local state for immediate UI update
-      const displayRequest = {
-        id: requestData.id,
-        projectNumber: requestData.project_number,
-        refNumber: requestData.ref_number,
-        beneficiaryName: requestData.beneficiary_name,
-        country: requestData.country,
-        amount: requestData.amount,
-        currency: requestData.currency,
-        valueDate: requestData.value_date,
-        currentStage: requestData.current_stage,
-        status: requestData.status,
-        priority: requestData.priority,
-        assignedTo: requestData.assigned_to,
-        createdBy: requestData.created_by,
-        createdAt: requestData.created_at,
-        updatedAt: requestData.updated_at,
-        processingDays: requestData.processing_days || 0,
-        projectDetails: requestData.project_details,
-        referenceDocumentation: requestData.reference_documentation,
-        regionalTeam: requestData.regionalTeam
-      };
+      // Real-time subscription will automatically update the UI
 
-      // Add to requests list
-      setRequests(prev => [displayRequest, ...prev]);
 
+
+      // Request will be automatically added by real-time subscription
+
+      // Refresh requests to ensure real-time sync
+      if (refreshRequests) {
+        refreshRequests();
+      }
+
+      // Show success message
       alert(`✅ Request created successfully! Assigned to ${requestData.regionalTeam || 'Regional Team'}`);
+
       return requestData.id;
     } catch (error) {
       console.error('Error handling created request:', error);
       throw new Error('Failed to process withdrawal request');
+    }
+  };
+
+  // Handle request updates from inline editing
+  const handleRequestUpdate = (updatedRequest) => {
+    // Update the selected request
+    setSelectedRequest(updatedRequest);
+
+    // Request will be automatically updated by real-time subscription
+
+    // Refresh requests to ensure real-time sync
+    if (refreshRequests) {
+      refreshRequests();
     }
   };
 
@@ -438,6 +415,7 @@ const WithdrawalRequestTracker = ({ currentUser, onLogout }) => {
         users={{}}
         onDecisionMade={handleDecisionMade}
         onAddComment={handleAddComment}
+        onRequestUpdate={handleRequestUpdate}
       />
 
       <ProfileModal 

@@ -15,16 +15,13 @@ const NotificationToggle = ({
     if (isChecked !== defaultChecked) {
       setIsSaving(true);
       
-      // Simulate API call delay
-      const saveTimeout = setTimeout(() => {
-        setIsSaving(false);
-        if (onChange) {
-          onChange(isChecked);
-        }
-        console.log(`Notification setting "${title}" saved:`, isChecked);
-      }, 500);
+      // Save immediately without delay
+      setIsSaving(false);
+      if (onChange) {
+        onChange(isChecked);
+      }
 
-      return () => clearTimeout(saveTimeout);
+
     }
   }, [isChecked, defaultChecked, onChange, title]);
 
@@ -47,6 +44,11 @@ const NotificationToggle = ({
       bg: 'bg-orange-50',
       checkbox: 'text-orange-600 focus:ring-orange-500',
       saving: 'text-orange-500'
+    },
+    purple: {
+      bg: 'bg-purple-50',
+      checkbox: 'text-purple-600 focus:ring-purple-500',
+      saving: 'text-purple-500'
     }
   };
 

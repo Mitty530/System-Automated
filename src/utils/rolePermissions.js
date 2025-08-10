@@ -173,7 +173,7 @@ export const getAvailableActions = (userRole) => {
 };
 
 // Check if user can perform workflow action based on current stage
-export const canPerformWorkflowAction = (userRole, action, currentStage, requestData = {}) => {
+export const canPerformWorkflowAction = (userRole, action, currentStage) => {
   if (!userRole || !action || !currentStage) return false;
 
   // Admin and Loan Administrator can do everything
@@ -203,14 +203,14 @@ export const canPerformWorkflowAction = (userRole, action, currentStage, request
       return userRole === USER_ROLES.LOAN_ADMINISTRATOR && (action === 'approve' || action === 'reject' || action === 'edit');
 
     case 'approved':
-      // Only core banking can disburse, loan admins can still edit
+      // Core banking stage - only core banking can approve to disburse
       if (userRole === USER_ROLES.CORE_BANKING) {
-        return action === 'disburse';
+        return action === 'approve' || action === 'view';
       }
       return userRole === USER_ROLES.LOAN_ADMINISTRATOR && action === 'edit';
 
     case 'disbursed':
-      // No actions allowed on disbursed requests except viewing
+      // Disbursed requests - only viewing allowed
       return action === 'view';
 
     default:
@@ -224,8 +224,8 @@ export const getAllowedActionsForStage = (userRole, currentStage) => {
 
   const actions = ['view']; // Everyone can view
 
-  // Admin and Loan Administrator can do everything
-  if (userRole === USER_ROLES.ADMIN || userRole === USER_ROLES.LOAN_ADMINISTRATOR) {
+  // Admin has full access to all stages and actions
+  if (userRole === USER_ROLES.ADMIN) {
     switch (currentStage) {
       case 'submitted':
       case 'under_loan_review':
@@ -233,13 +233,34 @@ export const getAllowedActionsForStage = (userRole, currentStage) => {
         actions.push('approve', 'reject', 'edit');
         break;
       case 'under_operations_review':
-        actions.push('edit'); // Can't approve/reject at operations stage
+        actions.push('approve', 'reject', 'edit'); // Admin can do everything
         break;
       case 'approved':
-        actions.push('edit');
+        actions.push('approve', 'edit'); // Admin can approve at core banking stage
         break;
       case 'disbursed':
-        // Only view allowed
+        actions.push('edit'); // Admin can even edit disbursed requests
+        break;
+    }
+    return actions;
+  }
+
+  // Loan Administrator has limited access
+  if (userRole === USER_ROLES.LOAN_ADMINISTRATOR) {
+    switch (currentStage) {
+      case 'submitted':
+      case 'under_loan_review':
+      case 'returned_for_modification':
+        actions.push('approve', 'reject', 'edit');
+        break;
+      case 'under_operations_review':
+        actions.push('approve', 'reject', 'edit'); // Loan admin can do everything
+        break;
+      case 'approved':
+        actions.push('approve', 'edit'); // Loan admin can approve at core banking stage
+        break;
+      case 'disbursed':
+        actions.push('edit'); // Loan admin can edit disbursed requests
         break;
     }
     return actions;
@@ -254,9 +275,14 @@ export const getAllowedActionsForStage = (userRole, currentStage) => {
       break;
 
     case 'approved':
+      // Core banking stage - core banking can approve to disburse
       if (userRole === USER_ROLES.CORE_BANKING) {
-        actions.push('disburse');
+        actions.push('approve');
       }
+      break;
+
+    case 'disbursed':
+      // Disbursed requests - only viewing allowed for all roles
       break;
 
     default:

@@ -8,8 +8,10 @@ const AUTHORIZED_DOMAINS = [
 
 // Specific authorized email addresses (exceptions to domain rule)
 const AUTHORIZED_EMAILS = [
-  // Admin exception
-  'Mamadouourydiallo819@gmail.com'
+  // Admin exceptions
+  'Mamadouourydiallo819@gmail.com',
+  'mamadouourydiallo819@gmail.com', // Case variation
+  'alomran303@gmail.com'
 ]
 
 /**

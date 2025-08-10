@@ -29,7 +29,7 @@ export const usePerformance = () => {
             metrics.firstContentfulPaint = Math.round(fcpEntry.startTime)
           }
 
-          console.log('📊 Performance Metrics:', metrics)
+          // Performance metrics collected (could be sent to analytics)
           
           // In production, you could send these metrics to an analytics service
           // analytics.track('page_performance', metrics)
@@ -43,7 +43,7 @@ export const usePerformance = () => {
   // Track user interactions
   const trackInteraction = useCallback((action, details = {}) => {
     try {
-      const interactionData = {
+      const _interactionData = {
         action,
         details,
         timestamp: new Date().toISOString(),
@@ -51,7 +51,7 @@ export const usePerformance = () => {
         userAgent: navigator.userAgent
       }
 
-      console.log('🔍 User Interaction:', interactionData)
+      // User interaction tracked (could be sent to analytics)
       
       // In production, send to analytics
       // analytics.track('user_interaction', interactionData)
@@ -61,22 +61,22 @@ export const usePerformance = () => {
   }, [])
 
   // Measure function execution time
-  const measureExecutionTime = useCallback((fn, label = 'Function') => {
+  const measureExecutionTime = useCallback((fn) => {
     return async (...args) => {
       const startTime = performance.now()
       try {
         const result = await fn(...args)
         const endTime = performance.now()
-        const executionTime = Math.round(endTime - startTime)
+        const _executionTime = Math.round(endTime - startTime)
         
-        console.log(`⏱️ ${label} execution time: ${executionTime}ms`)
+        // Execution time measured (could be sent to analytics)
         
         return result
       } catch (error) {
         const endTime = performance.now()
-        const executionTime = Math.round(endTime - startTime)
+        const _executionTime = Math.round(endTime - startTime)
         
-        console.log(`❌ ${label} failed after ${executionTime}ms:`, error)
+        // Function execution failed (could be sent to error tracking)
         throw error
       }
     }

@@ -100,7 +100,7 @@ src/
 
 ### Magic Link Authentication
 - Domain restrictions: @adfd.ae
-- Admin exceptions: Mamadouourydiallo819@gmail.com
+- Admin exceptions for authorized Gmail accounts
 - Supabase-powered authentication
 - JWT token management
 - Session persistence

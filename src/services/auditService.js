@@ -89,14 +89,18 @@ export const logLogout = async () => {
  * @param {object} requestData - Request data
  */
 export const logRequestCreation = async (requestData) => {
+  // Handle both camelCase (form data) and snake_case (database data) properties
+  const projectNumber = requestData.project_number || requestData.projectNumber || 'Unknown';
+  const beneficiaryName = requestData.beneficiary_name || requestData.beneficiaryName || 'Unknown';
+
   await logUserAction({
     actionType: 'create',
-    description: `Created withdrawal request: ${requestData.project_number}`,
+    description: `Created withdrawal request: ${projectNumber}`,
     resourceType: 'withdrawal_request',
     resourceId: requestData.id?.toString(),
     newValues: {
-      project_number: requestData.project_number,
-      beneficiary_name: requestData.beneficiary_name,
+      project_number: projectNumber,
+      beneficiary_name: beneficiaryName,
       amount: requestData.amount,
       currency: requestData.currency,
       country: requestData.country
@@ -109,9 +113,12 @@ export const logRequestCreation = async (requestData) => {
  * @param {object} requestData - Request data
  */
 export const logRequestSubmission = async (requestData) => {
+  // Handle both camelCase and snake_case properties
+  const projectNumber = requestData.project_number || requestData.projectNumber || 'Unknown';
+
   await logUserAction({
     actionType: 'submit',
-    description: `Submitted withdrawal request: ${requestData.project_number} - Forwarded to loan administrator`,
+    description: `Submitted withdrawal request: ${projectNumber} - Forwarded to loan administrator`,
     resourceType: 'withdrawal_request',
     resourceId: requestData.id?.toString(),
     oldValues: {
@@ -132,9 +139,12 @@ export const logRequestSubmission = async (requestData) => {
  * @param {object} newData - New request data
  */
 export const logRequestUpdate = async (requestId, oldData, newData) => {
+  // Handle both camelCase and snake_case properties
+  const projectNumber = newData?.project_number || newData?.projectNumber || oldData?.project_number || oldData?.projectNumber || requestId;
+
   await logUserAction({
     actionType: 'update',
-    description: `Updated withdrawal request: ${newData.project_number || requestId}`,
+    description: `Updated withdrawal request: ${projectNumber}`,
     resourceType: 'withdrawal_request',
     resourceId: requestId.toString(),
     oldValues: oldData,

@@ -1,43 +1,43 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     const handleAuthCallback = async () => {
-      console.log('🔄 Auth callback - checking user state...', {
-        hasUser: !!user,
-        loading,
-        userEmail: user?.email
-      });
-
       // Wait for auth to finish loading
       if (loading) {
-        console.log('⏳ Auth still loading, waiting...');
         return;
       }
 
-      // If we have a user, authentication was successful - redirect immediately
+      // Prevent multiple redirects
+      if (redirecting) {
+        return;
+      }
+
+      setRedirecting(true);
+
+      // If we have a user, authentication was successful - redirect to dashboard
       if (user) {
-        console.log('✅ User authenticated successfully:', user.email);
+        console.log('✅ Magic link authentication successful, redirecting to dashboard');
         navigate('/dashboard', { replace: true });
         return;
       }
 
-      // If no user and not loading, authentication failed - redirect immediately
-      console.log('❌ Authentication failed - no user found');
+      // If no user and not loading, authentication failed - redirect to landing
+      console.log('❌ Magic link authentication failed, redirecting to landing page');
       navigate('/', { replace: true });
     };
 
     // Use a short timeout to allow auth state to settle, then handle callback
-    const timeoutId = setTimeout(handleAuthCallback, 100);
+    const timeoutId = setTimeout(handleAuthCallback, 200);
 
     return () => clearTimeout(timeoutId);
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, redirecting]);
 
   // Minimal loading state - user will be redirected quickly
   const renderStatus = () => (

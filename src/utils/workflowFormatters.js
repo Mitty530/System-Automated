@@ -2,11 +2,11 @@ import { WorkflowStage, DecisionType, UserRole, CommentType } from '../data/enum
 
 export const formatWorkflowStage = (stage) => {
   const stageNames = {
-    [WorkflowStage.SUBMITTED]: 'Submitted',
-    [WorkflowStage.UNDER_LOAN_REVIEW]: 'Under Loan Review',
-    [WorkflowStage.UNDER_OPERATIONS_REVIEW]: 'Under Operations Review',
+    [WorkflowStage.SUBMITTED]: 'Archive Team',
+    [WorkflowStage.UNDER_LOAN_REVIEW]: 'Loan Administrator',
+    [WorkflowStage.UNDER_OPERATIONS_REVIEW]: 'Operations Team',
     [WorkflowStage.RETURNED_FOR_MODIFICATION]: 'Returned for Modification',
-    [WorkflowStage.APPROVED]: 'Approved',
+    [WorkflowStage.APPROVED]: 'Core Banking',
     [WorkflowStage.DISBURSED]: 'Disbursed'
   };
   return stageNames[stage] || stage;

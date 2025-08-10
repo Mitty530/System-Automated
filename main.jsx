@@ -5,20 +5,24 @@ import KombaiWrapper from './KombaiWrapper'
 import ErrorBoundary from '@kombai/react-error-boundary'
 import SimpleErrorBoundary from './src/components/SimpleErrorBoundary'
 import { AuthProvider } from './src/contexts/AuthContext'
+import { NotificationProvider } from './src/contexts/NotificationContext'
+import Toast from './src/components/ui/Toast'
 import './index.css'
 
 // Performance monitoring
 window.appStartTime = performance.now();
-console.log('🚀 ADFD System starting...');
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <SimpleErrorBoundary>
       <ErrorBoundary>
         <AuthProvider>
-          <KombaiWrapper>
-            <Example />
-          </KombaiWrapper>
+          <NotificationProvider>
+            <KombaiWrapper>
+              <Example />
+            </KombaiWrapper>
+            <Toast />
+          </NotificationProvider>
         </AuthProvider>
       </ErrorBoundary>
     </SimpleErrorBoundary>

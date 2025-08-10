@@ -18,9 +18,13 @@ const FormField = ({
   ...props
 }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [hasUserInput, setHasUserInput] = useState(false);
+
   const handleChange = (e) => {
+    const newValue = e.target.value;
+    setHasUserInput(newValue.length > 0);
     if (onChange) {
-      onChange(e.target.value);
+      onChange(newValue);
     }
   };
 
@@ -82,7 +86,7 @@ const FormField = ({
             type={type}
             value={value || ''}
             onChange={handleChange}
-            onFocus={() => setShowSuggestions(true)}
+            onFocus={() => setShowSuggestions(!hasUserInput)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             className={getFieldClasses()}
             placeholder={placeholder}
@@ -94,7 +98,7 @@ const FormField = ({
               <option key={index} value={suggestion} />
             ))}
           </datalist>
-          {showSuggestions && suggestions.length > 0 && (
+          {showSuggestions && suggestions.length > 0 && !hasUserInput && (
             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
               {suggestions.map((suggestion, index) => (
                 <button
@@ -103,6 +107,7 @@ const FormField = ({
                   className="w-full px-4 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none first:rounded-t-lg last:rounded-b-lg"
                   onClick={() => {
                     onChange(suggestion);
+                    setHasUserInput(true);
                     setShowSuggestions(false);
                   }}
                 >

@@ -1,20 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { User, Bell, X, Mail, Building, MapPin } from 'lucide-react';
 import Modal from './ui/Modal';
 import Input from './ui/Input';
 import Card from './ui/Card';
 import UserRoleIndicator from './UserRoleIndicator';
 import NotificationToggle from './ui/NotificationToggle';
+import { getUserNotificationPreferences, updateNotificationPreferences } from '../services/notificationService';
+
 
 const ProfileModal = ({ isOpen, onClose, currentUser }) => {
   const [activeTab, setActiveTab] = useState('profile');
+  const [notificationPreferences, setNotificationPreferences] = useState({
+    request_updates: true,
+    system_alerts: true,
+    weekly_reports: false,
+    email_enabled: true
+  });
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(false);
+
+  const loadNotificationPreferences = useCallback(async () => {
+    try {
+      setIsLoadingPreferences(true);
+      const preferences = await getUserNotificationPreferences(currentUser.id);
+      setNotificationPreferences(preferences);
+    } catch (error) {
+      console.error('Error loading notification preferences:', error);
+    } finally {
+      setIsLoadingPreferences(false);
+    }
+  }, [currentUser.id]);
+
+  // Load notification preferences when modal opens
+  useEffect(() => {
+    if (isOpen && currentUser?.id) {
+      loadNotificationPreferences();
+    }
+  }, [isOpen, currentUser?.id, loadNotificationPreferences]);
 
   if (!currentUser) return null;
 
-  const handleNotificationChange = (setting, value) => {
-    console.log(`Notification setting changed: ${setting} = ${value}`);
-    // In a real app, this would save to backend
+  const handleNotificationChange = async (setting, value) => {
+    try {
+      const updatedPreferences = {
+        ...notificationPreferences,
+        [setting]: value
+      };
+
+      setNotificationPreferences(updatedPreferences);
+
+      // Save to backend
+      await updateNotificationPreferences(currentUser.id, updatedPreferences);
+      console.log(`Notification setting saved: ${setting} = ${value}`);
+    } catch (error) {
+      console.error('Error updating notification preferences:', error);
+      // Revert on error
+      setNotificationPreferences(notificationPreferences);
+    }
   };
+
+
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -121,29 +165,45 @@ const ProfileModal = ({ isOpen, onClose, currentUser }) => {
             
             <Card className="p-6">
               <h4 className="text-lg font-semibold text-gray-800 mb-4">Email Notifications</h4>
-              <div className="space-y-4">
-                <NotificationToggle
-                  title="Request Updates"
-                  description="Get notified about request status changes"
-                  defaultChecked={true}
-                  color="blue"
-                  onChange={(value) => handleNotificationChange('request_updates', value)}
-                />
-                <NotificationToggle
-                  title="System Alerts"
-                  description="Important system notifications"
-                  defaultChecked={true}
-                  color="green"
-                  onChange={(value) => handleNotificationChange('system_alerts', value)}
-                />
-                <NotificationToggle
-                  title="Weekly Reports"
-                  description="Weekly summary of activities"
-                  defaultChecked={false}
-                  color="orange"
-                  onChange={(value) => handleNotificationChange('weekly_reports', value)}
-                />
-              </div>
+              {isLoadingPreferences ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-gray-600">Loading preferences...</span>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <NotificationToggle
+                    title="Request Updates"
+                    description="Get notified about request status changes"
+                    defaultChecked={notificationPreferences.request_updates}
+                    color="blue"
+                    onChange={(value) => handleNotificationChange('request_updates', value)}
+                  />
+                  <NotificationToggle
+                    title="System Alerts"
+                    description="Important system notifications"
+                    defaultChecked={notificationPreferences.system_alerts}
+                    color="green"
+                    onChange={(value) => handleNotificationChange('system_alerts', value)}
+                  />
+                  <NotificationToggle
+                    title="Weekly Reports"
+                    description="Weekly summary of activities"
+                    defaultChecked={notificationPreferences.weekly_reports}
+                    color="orange"
+                    onChange={(value) => handleNotificationChange('weekly_reports', value)}
+                  />
+                  <NotificationToggle
+                    title="Email Notifications"
+                    description="Enable/disable all email notifications"
+                    defaultChecked={notificationPreferences.email_enabled}
+                    color="purple"
+                    onChange={(value) => handleNotificationChange('email_enabled', value)}
+                  />
+                </div>
+              )}
+
+
             </Card>
           </div>
         );

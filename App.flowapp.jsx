@@ -6,37 +6,64 @@ import WithdrawalRequestTracker from './src/components/WithdrawalRequestTracker'
 import AuthCallback from './src/components/AuthCallback';
 import LogoutConfirmation from './src/components/LogoutConfirmation';
 import AuthWrapper from './src/components/AuthWrapper';
+
 import { useAuth } from './src/contexts/AuthContext';
 import { canPerformAction } from './src/utils/rolePermissions';
 
 // Main App Component with Routing
 const AppContent = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
-
+  const [loginModalState, setLoginModalState] = useState({
+    email: '',
+    isLoading: false,
+    error: '',
+    success: ''
+  });
 
   const [actionToPerform, setActionToPerform] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, signOut, getUserProfileByEmail } = useAuth();
+  const { user, loading: authLoading, signOut, getUserProfileByEmail } = useAuth();
+
+
 
   // Create user profile from database
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (user && user.email) {
         try {
-          // Fast database profile fetch with shorter timeout
-          const dbProfile = await Promise.race([
-            getUserProfileByEmail(user.email),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Database timeout')), 1500) // Reduced from 5000ms to 1500ms
-            )
-          ]);
+          setProfileLoading(true);
+
+          // Retry mechanism for database query
+          let dbProfile = null;
+          let retryCount = 0;
+          const maxRetries = 3;
+
+          while (!dbProfile && retryCount < maxRetries) {
+            try {
+              dbProfile = await getUserProfileByEmail(user.email);
+              if (!dbProfile) {
+                retryCount++;
+                console.log(`⏳ Retry ${retryCount}/${maxRetries} for user profile...`);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+              }
+            } catch (error) {
+              retryCount++;
+              console.error(`❌ Attempt ${retryCount} failed:`, error);
+              if (retryCount < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            }
+          }
 
           if (dbProfile) {
+            console.log('✅ Database profile found:', dbProfile);
             const profile = {
-              id: user.id,
+              id: dbProfile.id, // Use user_profiles.id instead of auth.users.id
+              auth_id: user.id, // Keep auth ID for reference
               email: user.email,
               name: dbProfile.full_name || user.email?.split('@')[0] || 'User',
               role: dbProfile.role,
@@ -51,24 +78,31 @@ const AppContent = () => {
               created_at: user.created_at
             };
             setUserProfile(profile);
+            console.log('✅ User profile set:', profile);
 
-            // Redirect to dashboard if on landing page
-            if (location.pathname === '/') {
+            // Redirect to dashboard if on landing page or auth callback
+            if (location.pathname === '/' || location.pathname === '/auth/callback') {
+              console.log('🔄 Redirecting to dashboard from:', location.pathname);
               navigate('/dashboard', { replace: true });
             }
 
           } else {
             // No database profile found - user must be added to database first
-            console.warn('❌ User not found in database:', user.email);
+            console.warn('❌ No database profile found for user:', user.email);
+            console.log('🔄 User authenticated but not in database. Please contact admin to add user.');
             setUserProfile(null);
             // Don't redirect - stay on landing page to show login
           }
         } catch (error) {
-          console.error('Error fetching user profile:', error);
+          console.error('❌ Error fetching user profile:', error);
           setUserProfile(null);
+        } finally {
+          setProfileLoading(false);
         }
       } else {
+        console.log('ℹ️ No user or email, clearing profile');
         setUserProfile(null);
+        setProfileLoading(false);
       }
     };
 
@@ -79,9 +113,16 @@ const AppContent = () => {
   const handleGetStarted = () => {
     // Add small delay to prevent rapid state changes
     setTimeout(() => {
+      console.log('🔄 handleGetStarted called:', { hasUser: !!user, hasUserProfile: !!userProfile });
       if (user && userProfile) {
+        console.log('✅ Navigating to dashboard');
         navigate('/dashboard');
+      } else if (user && !userProfile) {
+        // User is authenticated but not in database
+        console.log('⚠️ User authenticated but no profile found');
+        alert('⚠️ Account Setup Required\n\nYour email is authenticated but your account needs to be set up by an administrator.\n\nPlease contact your system administrator to complete your account setup.');
       } else {
+        console.log('🔄 Opening login modal');
         setShowLoginModal(true);
       }
     }, 100);
@@ -90,7 +131,6 @@ const AppContent = () => {
   // Handle logout with confirmation
   const handleLogout = async () => {
     try {
-      console.log('🔄 Logout initiated by user');
 
       // Show logout confirmation
       setShowLogoutConfirmation(true);
@@ -99,10 +139,35 @@ const AppContent = () => {
       const result = await signOut();
 
       if (result?.success !== false) {
-        console.log('✅ Logout successful, clearing user profile');
         setUserProfile(null);
         setActionToPerform(null);
         setShowLoginModal(false);
+
+        // Clear all browser cache and redirect to login
+        try {
+          // Clear all possible cache locations
+          localStorage.clear();
+          sessionStorage.clear();
+
+          // Clear browser cache if possible
+          if ('caches' in window) {
+            caches.keys().then(names => {
+              names.forEach(name => {
+                caches.delete(name);
+              });
+            });
+          }
+
+        } catch (cacheError) {
+          console.warn('Warning: Could not clear all cache:', cacheError);
+        }
+
+        // Force redirect to landing page after a short delay
+        setTimeout(() => {
+          navigate('/', { replace: true });
+          window.location.reload(); // Force a complete page reload
+        }, 2500); // Wait for logout confirmation to show
+
       } else {
         console.error('❌ Logout failed:', result?.error);
         setShowLogoutConfirmation(false);
@@ -165,14 +230,29 @@ const AppContent = () => {
     }
 
     // Action is allowed, proceed
-    console.log('Action allowed:', action);
   };
 
-  // Only show loading for specific user actions, not initial page load
-  // This allows the landing page to render immediately
-  const renderTime = performance.now() - (window.appStartTime || performance.now());
-  if (renderTime > 50) {
-    console.log(`⚡ App rendered in ${renderTime.toFixed(2)}ms`);
+  // Improved loading state management - prevent flash of landing page
+  const isInitialAuthLoading = authLoading;
+  const isProfileLoading = user && profileLoading;
+  const isAppLoading = isInitialAuthLoading || isProfileLoading;
+
+  // Show loading screen only during initial auth check or profile loading
+  if (isAppLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl text-white">🏛️</span>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">ADFD Tracking System</h2>
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+          <p className="text-gray-600 text-sm">
+            {isInitialAuthLoading ? 'Checking authentication...' : 'Loading your profile...'}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -184,14 +264,35 @@ const AppContent = () => {
           element={<AuthCallback />}
         />
 
-        {/* Landing Page Route */}
+        {/* Landing Page Route - Only show if no authenticated user */}
         <Route
           path="/"
           element={
             user && userProfile ? (
               <Navigate to="/dashboard" replace />
+            ) : user && !userProfile ? (
+              // User authenticated but no profile - show account setup message
+              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl text-white">⚠️</span>
+                    </div>
+                    <h2 className="text-xl font-semibold text-gray-800 mb-2">Account Setup Required</h2>
+                    <p className="text-gray-600 mb-6">
+                      Please contact your administrator to complete your account setup.
+                    </p>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              </div>
             ) : (
-              <LandingPage onGetStarted={handleGetStarted} />
+              <LandingPage onGetStarted={handleGetStarted} userProfile={userProfile} />
             )
           }
         />
@@ -222,9 +323,17 @@ const AppContent = () => {
         onClose={() => {
           setShowLoginModal(false);
           setActionToPerform(null);
+          setLoginModalState({
+            email: '',
+            isLoading: false,
+            error: '',
+            success: ''
+          });
         }}
         actionToPerform={actionToPerform}
         getRequiredRole={getRequiredRoleForAction}
+        modalState={loginModalState}
+        setModalState={setLoginModalState}
       />
 
       {/* Logout Confirmation */}
@@ -232,6 +341,8 @@ const AppContent = () => {
         isVisible={showLogoutConfirmation}
         onComplete={handleLogoutConfirmationComplete}
       />
+
+
     </AuthWrapper>
   );
 };

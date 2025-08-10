@@ -8,7 +8,7 @@ import { fetchRequests } from '../services/requestService';
  * @param {object} user - Current user object
  * @returns {object} - Requests data and loading state
  */
-export const useRealtimeRequests = (filters = {}, user = null) => {
+export const useRealtimeRequests = (filters = {}) => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,7 +30,6 @@ export const useRealtimeRequests = (filters = {}, user = null) => {
 
   // Handle real-time updates
   const handleRealtimeUpdate = useCallback((payload) => {
-    console.log('Real-time update received:', payload);
     
     switch (payload.eventType) {
       case 'INSERT':
@@ -52,7 +51,7 @@ export const useRealtimeRequests = (filters = {}, user = null) => {
         break;
         
       default:
-        console.log('Unknown event type:', payload.eventType);
+        // Unknown event type - ignore
     }
   }, []);
 
@@ -73,13 +72,10 @@ export const useRealtimeRequests = (filters = {}, user = null) => {
         },
         handleRealtimeUpdate
       )
-      .subscribe((status) => {
-        console.log('Real-time subscription status:', status);
-      });
+      .subscribe();
 
     // Cleanup subscription on unmount
     return () => {
-      console.log('Cleaning up real-time subscription');
       subscription.unsubscribe();
     };
   }, [loadRequests, handleRealtimeUpdate]);

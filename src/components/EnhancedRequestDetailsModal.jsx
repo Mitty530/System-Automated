@@ -5,14 +5,15 @@ import Card from './ui/Card';
 import Button from './ui/Button';
 import Badge from './ui/Badge';
 import StatusIcon from './StatusIcon';
-import DecisionActionPanel from './DecisionActionPanel';
+import EnhancedDecisionPanel from './EnhancedDecisionPanel';
 import AuditTrailSection from './AuditTrailSection';
 import CommentsSection from './CommentsSection';
 import WorkflowStatusIndicator from './WorkflowStatusIndicator';
 import WorkflowProgressTracker from './WorkflowProgressTracker';
 import { formatCurrency, formatDate, formatFileSize } from '../utils/formatters';
 import { formatWorkflowStage } from '../utils/workflowFormatters';
-import { getRequestDetails, addComment, recordDecision } from '../services/requestService';
+import { getRequestDetails, addComment } from '../services/requestService';
+import { progressWorkflow } from '../utils/workflowManager';
 import { supabase } from '../lib/supabase';
 
 const EnhancedRequestDetailsModal = ({
@@ -24,6 +25,7 @@ const EnhancedRequestDetailsModal = ({
   users = {},
   onDecisionMade,
   onAddComment,
+  onRequestUpdate,
   initialTab = 'details'
 }) => {
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -79,39 +81,71 @@ const EnhancedRequestDetailsModal = ({
     }
   };
 
+  // Handle request updates from inline editing
+  const handleRequestUpdate = (updatedRequest) => {
+    setRequestDetails(prev => ({
+      ...prev,
+      ...updatedRequest
+    }));
+
+    // Call parent callback if provided
+    if (onRequestUpdate) {
+      onRequestUpdate(updatedRequest);
+    }
+  };
+
   // Handle workflow decisions
   const handleDecisionMade = async (decisionType, comment) => {
     if (!requestDetails?.id || !currentUser?.id) return;
 
     try {
-      const result = await recordDecision(
+      // Use the workflow manager to handle the decision
+      const result = await progressWorkflow(
         requestDetails.id,
-        currentUser.id,
         decisionType,
         comment,
-        requestDetails.current_stage,
-        getNextStage(decisionType, requestDetails.current_stage)
+        currentUser.id
       );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to process workflow transition');
+      }
 
       // Update local state with updated request
       setRequestDetails(prev => ({
         ...prev,
         ...result.request,
-        decisions: [...(prev.decisions || []), result.decision]
+        // Keep existing decisions if they exist
+        decisions: prev.decisions || []
       }));
 
       // Call parent callback if provided
       if (onDecisionMade) {
         onDecisionMade(decisionType, comment);
       }
+
+      // Show success message
+      alert(`Decision "${decisionType}" has been recorded successfully!`);
+
     } catch (err) {
       console.error('Error recording decision:', err);
-      alert('Failed to record decision. Please try again.');
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        requestId: requestDetails.id,
+        userId: currentUser.id,
+        decisionType,
+        comment
+      });
+
+      // Show more specific error message
+      const errorMessage = err.message || 'Unknown error occurred';
+      alert(`Failed to record decision: ${errorMessage}. Please try again.`);
     }
   };
 
   // Helper function to determine next stage based on decision
-  const getNextStage = (decisionType, currentStage) => {
+  const _getNextStage = (decisionType, currentStage) => {
     const stageMap = {
       'approve': {
         'under_loan_review': 'under_operations_review',
@@ -493,10 +527,11 @@ const EnhancedRequestDetailsModal = ({
                 auditEntries={displayDecisions}
                 users={users}
               />
-              <DecisionActionPanel
+              <EnhancedDecisionPanel
                 request={displayRequest}
                 currentUser={currentUser}
                 onDecision={handleDecisionMade}
+                onRequestUpdate={handleRequestUpdate}
               />
             </>
           )}

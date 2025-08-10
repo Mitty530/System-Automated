@@ -188,8 +188,7 @@ const CreateRequestModal = ({ isOpen, onClose, onCreateRequest }) => {
         throw new Error('User not authenticated');
       }
 
-      console.log('Current user:', user);
-      console.log('User ID:', user.id);
+
 
       // Validate country and region
       const region = getRegionForCountry(formData.country);
@@ -198,7 +197,6 @@ const CreateRequestModal = ({ isOpen, onClose, onCreateRequest }) => {
       }
 
       // Create request in database with workflow
-      console.log('Creating request with data:', formData);
       const requestData = {
         projectNumber: formData.projectNumber,
         referenceNumber: formData.referenceNumber,
@@ -211,22 +209,15 @@ const CreateRequestModal = ({ isOpen, onClose, onCreateRequest }) => {
         referenceDocumentation: formData.referenceDocumentation
       };
 
-      console.log('Calling createRequestWithWorkflow...');
       const newRequest = await createRequestWithWorkflow(requestData, user.id);
-      console.log('Request created successfully:', newRequest);
 
       // Log request creation
       await logRequestCreation(newRequest);
 
       // Upload files if any
-      console.log('Checking for documents to upload...');
-      console.log('formData.documents:', formData.documents);
-      console.log('formData.documents.length:', formData.documents?.length);
 
       if (formData.documents && formData.documents.length > 0) {
-        console.log('Processing documents:', formData.documents);
         const fileObjects = formData.documents.map(doc => doc.file).filter(Boolean);
-        console.log('File objects to upload:', fileObjects);
 
         if (fileObjects.length > 0) {
           try {
@@ -260,15 +251,25 @@ const CreateRequestModal = ({ isOpen, onClose, onCreateRequest }) => {
       const regionalTeam = getRegionalTeamForCountry(formData.country);
 
       // Call the parent callback with the created request
-      await onCreateRequest({
-        ...newRequest,
-        regionalTeam: regionalTeam?.name || 'Unknown Region'
-      });
+      try {
+        await onCreateRequest({
+          ...newRequest,
+          regionalTeam: regionalTeam?.name || 'Unknown Region'
+        });
 
-      // Close modal after short delay
-      setTimeout(() => {
-        onClose();
-      }, 1500);
+        // Close modal after short delay
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } catch (uiError) {
+        console.error('UI update error (request was created successfully):', uiError);
+
+        // Still close the modal since the request was created
+        alert('✅ Request created successfully!');
+        setTimeout(() => {
+          onClose();
+        }, 1000);
+      }
 
     } catch (error) {
       console.error('Form submission error:', error);

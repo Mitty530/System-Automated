@@ -2,14 +2,16 @@
 import { supabase } from '../lib/supabase.js';
 import { getRegionForCountry } from './regionalMapping.js';
 import { logWorkflowProgress, logRequestCreation, logRequestSubmission } from '../services/auditService.js';
+import { sendWorkflowNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 
+// 5-stage workflow: Archive Team → Loan Admin → Operations Teams → Core Banking → Disbursed
 export const WORKFLOW_STAGES = {
-  SUBMITTED: 'submitted',
-  UNDER_LOAN_REVIEW: 'under_loan_review',
-  UNDER_OPERATIONS_REVIEW: 'under_operations_review',
-  RETURNED_FOR_MODIFICATION: 'returned_for_modification',
-  APPROVED: 'approved',
-  DISBURSED: 'disbursed'
+  SUBMITTED: 'submitted',                    // Archive Team creates request
+  UNDER_LOAN_REVIEW: 'under_loan_review',   // Loan Administrator reviews
+  UNDER_OPERATIONS_REVIEW: 'under_operations_review', // Operations Teams review
+  RETURNED_FOR_MODIFICATION: 'returned_for_modification', // Operations rejected, back to loan admin
+  APPROVED: 'approved',                      // Core Banking approves
+  DISBURSED: 'disbursed'                    // Automatically disbursed after core banking approval
 };
 
 export const USER_ROLES = {
@@ -27,20 +29,21 @@ export const USER_ROLES = {
  * @returns {string} - Next workflow stage
  */
 export const getNextWorkflowStage = (currentStage, decision) => {
-  // Handle rejections - operations team rejections go back to loan admin
+  // Handle rejections - specific logic for operations team rejection
   if (decision === 'reject') {
     if (currentStage === WORKFLOW_STAGES.UNDER_OPERATIONS_REVIEW) {
-      return WORKFLOW_STAGES.RETURNED_FOR_MODIFICATION;
+      return WORKFLOW_STAGES.RETURNED_FOR_MODIFICATION; // Operations reject → back to loan admin
     }
-    return currentStage; // Other rejections stay in same stage
+    return currentStage; // Other rejections stay in current stage
   }
 
+  // 5-stage workflow progression for approvals
   const stageFlow = {
-    [WORKFLOW_STAGES.SUBMITTED]: WORKFLOW_STAGES.UNDER_LOAN_REVIEW,
-    [WORKFLOW_STAGES.UNDER_LOAN_REVIEW]: WORKFLOW_STAGES.UNDER_OPERATIONS_REVIEW,
-    [WORKFLOW_STAGES.RETURNED_FOR_MODIFICATION]: WORKFLOW_STAGES.UNDER_OPERATIONS_REVIEW,
-    [WORKFLOW_STAGES.UNDER_OPERATIONS_REVIEW]: WORKFLOW_STAGES.APPROVED,
-    [WORKFLOW_STAGES.APPROVED]: WORKFLOW_STAGES.DISBURSED
+    [WORKFLOW_STAGES.SUBMITTED]: WORKFLOW_STAGES.UNDER_LOAN_REVIEW,           // Archive → Loan Admin
+    [WORKFLOW_STAGES.UNDER_LOAN_REVIEW]: WORKFLOW_STAGES.UNDER_OPERATIONS_REVIEW, // Loan Admin → Operations
+    [WORKFLOW_STAGES.RETURNED_FOR_MODIFICATION]: WORKFLOW_STAGES.UNDER_OPERATIONS_REVIEW, // Fixed → Operations
+    [WORKFLOW_STAGES.UNDER_OPERATIONS_REVIEW]: WORKFLOW_STAGES.APPROVED,     // Operations → Core Banking
+    [WORKFLOW_STAGES.APPROVED]: WORKFLOW_STAGES.DISBURSED                    // Core Banking → Disbursed (auto)
   };
 
   return stageFlow[currentStage] || currentStage;
@@ -54,7 +57,7 @@ export const getNextWorkflowStage = (currentStage, decision) => {
  */
 export const getAssigneeForStage = async (stage, region = null) => {
   try {
-    console.log(`Getting assignee for stage: ${stage}, region: ${region}`);
+    console.log(`Finding assignee for stage: ${stage}, region: ${region}`);
 
     // Production logic: Find appropriate user based on role and region
     let roleQuery = supabase
@@ -73,11 +76,14 @@ export const getAssigneeForStage = async (stage, region = null) => {
       case WORKFLOW_STAGES.UNDER_OPERATIONS_REVIEW:
         roleQuery = roleQuery
           .eq('role', USER_ROLES.OPERATIONS_TEAM)
-          .eq('regional_assignment', region);
+          .eq('region', region);
         break;
       case WORKFLOW_STAGES.APPROVED:
         roleQuery = roleQuery.eq('role', USER_ROLES.CORE_BANKING);
         break;
+      case WORKFLOW_STAGES.DISBURSED:
+        // No assignment needed for disbursed stage
+        return null;
       default:
         console.warn(`Unknown stage for assignment: ${stage}`);
         return null;
@@ -87,11 +93,18 @@ export const getAssigneeForStage = async (stage, region = null) => {
 
     if (error) {
       console.error('Error finding assignee:', error);
+      throw new Error(`Database error finding assignee: ${error.message}`);
     }
 
     if (users && users.length > 0) {
-      console.log('Assigning to user:', users[0]);
+      console.log(`Found assignee: ${users[0].full_name} (${users[0].email})`);
       return users[0].id;
+    }
+
+    // For disbursed stage, never assign anyone
+    if (stage === WORKFLOW_STAGES.DISBURSED) {
+      console.log('Disbursed stage - no assignee needed');
+      return null;
     }
 
     // Fallback for development: try to find admin user
@@ -104,20 +117,20 @@ export const getAssigneeForStage = async (stage, region = null) => {
       .limit(1);
 
     if (!adminError && adminUsers && adminUsers.length > 0) {
-      console.log('Assigning to admin user:', adminUsers[0]);
       return adminUsers[0].id;
     }
 
-    // Final fallback: any active user
-    const { data: anyUser, error: anyUserError } = await supabase
-      .from('user_profiles')
-      .select('id, full_name, email')
-      .eq('is_active', true)
-      .limit(1);
+    // Final fallback: any active user (but not for disbursed stage)
+    if (stage !== WORKFLOW_STAGES.DISBURSED) {
+      const { data: anyUser, error: anyUserError } = await supabase
+        .from('user_profiles')
+        .select('id, full_name, email')
+        .eq('is_active', true)
+        .limit(1);
 
-    if (!anyUserError && anyUser && anyUser.length > 0) {
-      console.log('Assigning to fallback user:', anyUser[0]);
-      return anyUser[0].id;
+      if (!anyUserError && anyUser && anyUser.length > 0) {
+        return anyUser[0].id;
+      }
     }
 
     console.error('No active users found in user_profiles table');
@@ -140,6 +153,17 @@ export const getAssigneeForStage = async (stage, region = null) => {
  */
 export const progressWorkflow = async (requestId, decision, comments, userId) => {
   try {
+    // Validate input parameters
+    if (!requestId) {
+      throw new Error('Request ID is required');
+    }
+    if (!decision) {
+      throw new Error('Decision is required');
+    }
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
     // Get current request data
     const { data: request, error: fetchError } = await supabase
       .from('withdrawal_requests')
@@ -147,31 +171,49 @@ export const progressWorkflow = async (requestId, decision, comments, userId) =>
       .eq('id', requestId)
       .single();
 
-    if (fetchError || !request) {
+    if (fetchError) {
+      console.error('Error fetching request:', fetchError);
+      throw new Error(`Failed to fetch request: ${fetchError.message}`);
+    }
+
+    if (!request) {
       throw new Error('Request not found');
+    }
+
+    // Validate required request properties
+    if (!request.current_stage) {
+      throw new Error('Request is missing current stage information');
     }
 
     const currentStage = request.current_stage;
     const nextStage = getNextWorkflowStage(currentStage, decision);
     const region = request.region;
 
-    // Get next assignee
-    const nextAssignee = await getAssigneeForStage(nextStage, region);
+    // Get next assignee (except for disbursed stage which has no assignee)
+    let nextAssignee = null;
+    if (nextStage !== WORKFLOW_STAGES.DISBURSED) {
+      nextAssignee = await getAssigneeForStage(nextStage, region);
+
+      if (!nextAssignee && nextStage !== WORKFLOW_STAGES.DISBURSED) {
+        throw new Error(`No assignee found for stage ${nextStage} in region ${region}`);
+      }
+    } else {
+      // Explicitly set to null for disbursed stage
+      nextAssignee = null;
+    }
 
     // Update request with new stage and assignee
     const updateData = {
       current_stage: nextStage,
       assigned_to: nextAssignee,
+      decision_type: decision,
+      comment: comments,
       updated_at: new Date().toISOString()
     };
 
     // Update status based on stage and decision
     if (decision === 'reject') {
-      if (currentStage === WORKFLOW_STAGES.UNDER_OPERATIONS_REVIEW) {
-        updateData.status = `Returned to Loan Administrator for modifications - ${comments}`;
-      } else {
-        updateData.status = `Rejected at ${formatStageName(currentStage)} - ${comments}`;
-      }
+      updateData.status = `Rejected at ${formatStageName(currentStage)} - ${comments}`;
       updateData.rejection_reason = comments;
     } else {
       // Create descriptive status messages for approvals
@@ -183,10 +225,11 @@ export const progressWorkflow = async (requestId, decision, comments, userId) =>
           updateData.status = `Approved by Loan Administrator - Awaiting regional operations team review`;
           break;
         case WORKFLOW_STAGES.APPROVED:
-          updateData.status = `Approved by Operations Team - Ready for core banking disbursement`;
+          updateData.status = `Approved by Operations Team - Awaiting core banking approval`;
           break;
         case WORKFLOW_STAGES.DISBURSED:
-          updateData.status = `Funds successfully disbursed by Core Banking`;
+          updateData.status = `Approved by Core Banking - Funds disbursed successfully`;
+          updateData.completed_at = new Date().toISOString();
           break;
         default:
           updateData.status = `${formatStageName(nextStage)} - Pending review`;
@@ -197,15 +240,27 @@ export const progressWorkflow = async (requestId, decision, comments, userId) =>
     const stageFields = getStageSpecificFields(currentStage, userId, comments);
     Object.assign(updateData, stageFields);
 
-    const { data: updatedRequest, error: updateError } = await supabase
-      .from('withdrawal_requests')
-      .update(updateData)
-      .eq('id', requestId)
-      .select()
-      .single();
+    // Use the secure function to update the request
+    const { data: updatedRequestData, error: updateError } = await supabase
+      .rpc('update_withdrawal_request_secure', {
+        request_id: requestId,
+        user_id: userId,
+        update_data: updateData
+      });
 
     if (updateError) {
-      throw updateError;
+      console.error('Error updating request:', updateError);
+      throw new Error(`Failed to update request: ${updateError.message}`);
+    }
+
+    if (!updatedRequestData) {
+      throw new Error('No data returned from update operation');
+    }
+
+    const updatedRequest = updatedRequestData;
+
+    if (!updatedRequest) {
+      throw new Error('No data returned after update');
     }
 
     // Log workflow progression
@@ -217,10 +272,19 @@ export const progressWorkflow = async (requestId, decision, comments, userId) =>
       comments
     );
 
-    return updatedRequest;
+    return {
+      success: true,
+      request: updatedRequest,
+      previousStage: currentStage,
+      newStage: nextStage
+    };
   } catch (error) {
     console.error('Error progressing workflow:', error);
-    throw error;
+    return {
+      success: false,
+      error: error.message,
+      request: null
+    };
   }
 };
 
@@ -251,8 +315,7 @@ const getStageSpecificFields = (stage, userId, comments) => {
     case WORKFLOW_STAGES.APPROVED:
       return {
         core_banking_processed_by: userId,
-        core_banking_processed_at: timestamp,
-        completed_at: timestamp
+        core_banking_processed_at: timestamp
       };
     default:
       return {};
@@ -266,11 +329,10 @@ const getStageSpecificFields = (stage, userId, comments) => {
  */
 const formatStageName = (stage) => {
   const stageNames = {
-    [WORKFLOW_STAGES.SUBMITTED]: 'Submitted',
-    [WORKFLOW_STAGES.UNDER_LOAN_REVIEW]: 'Under Loan Review',
-    [WORKFLOW_STAGES.UNDER_OPERATIONS_REVIEW]: 'Under Operations Review',
-    [WORKFLOW_STAGES.RETURNED_FOR_MODIFICATION]: 'Returned for Modification',
-    [WORKFLOW_STAGES.APPROVED]: 'Approved',
+    [WORKFLOW_STAGES.SUBMITTED]: 'Archive Team',
+    [WORKFLOW_STAGES.UNDER_LOAN_REVIEW]: 'Loan Administrator',
+    [WORKFLOW_STAGES.UNDER_OPERATIONS_REVIEW]: 'Operations Team',
+    [WORKFLOW_STAGES.APPROVED]: 'Core Banking',
     [WORKFLOW_STAGES.DISBURSED]: 'Disbursed'
   };
   return stageNames[stage] || stage;
@@ -295,7 +357,8 @@ export const canUserPerformAction = (userRole, action, requestStage) => {
     [WORKFLOW_STAGES.UNDER_LOAN_REVIEW]: [USER_ROLES.LOAN_ADMINISTRATOR, USER_ROLES.ADMIN],
     [WORKFLOW_STAGES.UNDER_OPERATIONS_REVIEW]: [USER_ROLES.OPERATIONS_TEAM, USER_ROLES.LOAN_ADMINISTRATOR, USER_ROLES.ADMIN],
     [WORKFLOW_STAGES.RETURNED_FOR_MODIFICATION]: [USER_ROLES.LOAN_ADMINISTRATOR, USER_ROLES.ADMIN],
-    [WORKFLOW_STAGES.APPROVED]: [USER_ROLES.CORE_BANKING, USER_ROLES.LOAN_ADMINISTRATOR, USER_ROLES.ADMIN]
+    [WORKFLOW_STAGES.APPROVED]: [USER_ROLES.CORE_BANKING, USER_ROLES.LOAN_ADMINISTRATOR, USER_ROLES.ADMIN],
+    [WORKFLOW_STAGES.DISBURSED]: [USER_ROLES.LOAN_ADMINISTRATOR, USER_ROLES.ADMIN] // Only view access
   };
 
   const allowedRoles = stagePermissions[requestStage] || [];
@@ -310,21 +373,16 @@ export const canUserPerformAction = (userRole, action, requestStage) => {
  */
 export const createRequestWithWorkflow = async (requestData, userId) => {
   try {
-    console.log('Creating request with workflow - Input data:', { requestData, userId });
-
     // Determine region from country
     const region = getRegionForCountry(requestData.country);
-    console.log('Region determined:', region);
     if (!region) {
       throw new Error(`Unsupported country: ${requestData.country}`);
     }
 
-    // Get initial assignee (loan administrator for loan review)
-    console.log('Getting assignee for stage:', WORKFLOW_STAGES.UNDER_LOAN_REVIEW);
+    // Get initial assignee (loan administrator for when it moves to loan review)
     const initialAssignee = await getAssigneeForStage(WORKFLOW_STAGES.UNDER_LOAN_REVIEW, region);
-    console.log('Initial assignee:', initialAssignee);
 
-    // Prepare request data
+    // Prepare request data - Start at SUBMITTED stage
     const dbRequestData = {
       project_number: requestData.projectNumber,
       ref_number: requestData.referenceNumber,
@@ -336,10 +394,10 @@ export const createRequestWithWorkflow = async (requestData, userId) => {
       value_date: requestData.date,
       project_details: requestData.projectDetails,
       reference_documentation: requestData.referenceDocumentation,
-      current_stage: WORKFLOW_STAGES.UNDER_LOAN_REVIEW, // Archive team submits, goes to loan admin
-      status: `New request submitted by Archive Team - Under loan administrator review`,
+      current_stage: WORKFLOW_STAGES.SUBMITTED, // Start at SUBMITTED stage
+      status: `New request created - Ready for submission to loan administrator`,
       priority: 'medium',
-      assigned_to: initialAssignee,
+      assigned_to: initialAssignee, // Pre-assign to loan admin for next stage
       created_by: userId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -347,7 +405,6 @@ export const createRequestWithWorkflow = async (requestData, userId) => {
     };
 
     // Create the request
-    console.log('Inserting request data:', dbRequestData);
     const { data: newRequest, error: createError } = await supabase
       .from('withdrawal_requests')
       .insert(dbRequestData)
@@ -359,13 +416,29 @@ export const createRequestWithWorkflow = async (requestData, userId) => {
       throw createError;
     }
 
-    console.log('Request created successfully:', newRequest);
+    // Log the request creation (don't fail if logging fails)
+    try {
+      await logRequestCreation(newRequest);
+    } catch (auditError) {
+      console.warn('Failed to log request creation:', auditError);
+    }
 
-    // Log the request creation and submission
-    await logRequestCreation(newRequest);
-    await logRequestSubmission(newRequest);
+    // Automatically progress to UNDER_LOAN_REVIEW stage
+    const progressResult = await progressWorkflow(
+      newRequest.id,
+      'approve',
+      'Request automatically submitted to loan administrator for review',
+      userId
+    );
 
-    return newRequest;
+    // Return the updated request with the correct stage
+    if (progressResult && progressResult.success && progressResult.request) {
+      return progressResult.request;
+    } else {
+      // If progression failed, return the original request
+      console.warn('Workflow progression failed, returning original request');
+      return newRequest;
+    }
   } catch (error) {
     console.error('Error creating request with workflow:', error);
     throw error;
@@ -390,8 +463,17 @@ export const handleWorkflowTransition = async (requestId, action, comments, user
       .eq('id', requestId)
       .single();
 
-    if (fetchError || !request) {
+    if (fetchError) {
+      throw new Error(`Failed to fetch request: ${fetchError.message}`);
+    }
+
+    if (!request) {
       throw new Error('Request not found');
+    }
+
+    // Validate required request properties
+    if (!request.current_stage) {
+      throw new Error('Request is missing current stage information');
     }
 
     const currentStage = request.current_stage;
@@ -406,16 +488,25 @@ export const handleWorkflowTransition = async (requestId, action, comments, user
     // Get next assignee based on workflow logic
     let nextAssignee = null;
     if (action === 'approve') {
-      nextAssignee = await getAssigneeForStage(nextStage, region);
-    } else if (action === 'reject' && currentStage === WORKFLOW_STAGES.UNDER_OPERATIONS_REVIEW) {
-      // Operations team rejection goes back to loan administrator
-      nextAssignee = await getAssigneeForStage(WORKFLOW_STAGES.RETURNED_FOR_MODIFICATION, region);
+      // Don't assign anyone for disbursed stage (final stage)
+      if (nextStage !== WORKFLOW_STAGES.DISBURSED) {
+        nextAssignee = await getAssigneeForStage(nextStage, region);
+        if (!nextAssignee && nextStage !== WORKFLOW_STAGES.DISBURSED) {
+          throw new Error(`No assignee found for stage ${nextStage} in region ${region}`);
+        }
+      } else {
+        // Explicitly set to null for disbursed stage
+        nextAssignee = null;
+      }
     }
+    // For rejections, request stays with current assignee
 
     // Prepare update data
     const updateData = {
       current_stage: nextStage,
       assigned_to: nextAssignee,
+      decision_type: action,
+      comment: comments,
       updated_at: new Date().toISOString()
     };
 
@@ -433,10 +524,10 @@ export const handleWorkflowTransition = async (requestId, action, comments, user
           updateData.status = `Loan administrator approved - Forwarded to ${region} operations team for review`;
           break;
         case WORKFLOW_STAGES.APPROVED:
-          updateData.status = `${region} operations team approved - Ready for core banking disbursement`;
+          updateData.status = `${region} operations team approved - Forwarded to core banking for final approval`;
           break;
         case WORKFLOW_STAGES.DISBURSED:
-          updateData.status = `Core banking completed disbursement - Request fulfilled`;
+          updateData.status = `Core banking approved - Funds disbursed successfully`;
           updateData.completed_at = new Date().toISOString();
           break;
         default:
@@ -448,17 +539,23 @@ export const handleWorkflowTransition = async (requestId, action, comments, user
     const stageFields = getStageSpecificFields(currentStage, userId, comments);
     Object.assign(updateData, stageFields);
 
-    // Update the request
-    const { data: updatedRequest, error: updateError } = await supabase
-      .from('withdrawal_requests')
-      .update(updateData)
-      .eq('id', requestId)
-      .select()
-      .single();
+    // Update the request using the secure function
+    const { data: updatedRequestData, error: updateError } = await supabase
+      .rpc('update_withdrawal_request_secure', {
+        request_id: requestId,
+        user_id: userId,
+        update_data: updateData
+      });
 
     if (updateError) {
-      throw updateError;
+      throw new Error(`Failed to process workflow transition: ${updateError.message}`);
     }
+
+    if (!updatedRequestData) {
+      throw new Error('No data returned from workflow transition');
+    }
+
+    const updatedRequest = updatedRequestData;
 
     // Log the workflow progression
     await logWorkflowProgress(
@@ -469,10 +566,22 @@ export const handleWorkflowTransition = async (requestId, action, comments, user
       comments
     );
 
-    // TODO: Send notifications to relevant users
-    // This would be implemented in Phase 4 when notifications are added
-    console.log(`Workflow transition completed: ${currentStage} → ${nextStage}`);
-    console.log(`Assigned to: ${nextAssignee}`);
+    // Send notifications to relevant users
+    try {
+      await sendWorkflowNotifications({
+        requestId,
+        requestData: updatedRequest,
+        previousStage: currentStage,
+        newStage: nextStage,
+        action,
+        comments,
+        actionBy: userId,
+        assignedTo: nextAssignee
+      });
+    } catch (notificationError) {
+      console.error('Error sending workflow notifications:', notificationError);
+      // Don't fail the workflow transition if notification fails
+    }
 
     return {
       success: true,
@@ -485,5 +594,88 @@ export const handleWorkflowTransition = async (requestId, action, comments, user
   } catch (error) {
     console.error('Error in workflow transition:', error);
     throw error;
+  }
+};
+
+/**
+ * Send workflow notifications to relevant users
+ * @param {object} notificationData - Notification data
+ * @returns {Promise<void>}
+ */
+const sendWorkflowNotifications = async (notificationData) => {
+  try {
+    const {
+      requestId,
+      requestData,
+      previousStage,
+      newStage,
+      action,
+      comments,
+      actionBy,
+      assignedTo
+    } = notificationData;
+
+    // Determine notification type based on action and stage
+    let notificationType;
+    let recipientUserId;
+
+    if (action === 'approve') {
+      switch (newStage) {
+        case WORKFLOW_STAGES.UNDER_LOAN_REVIEW:
+          notificationType = NOTIFICATION_TYPES.REQUEST_SUBMITTED;
+          recipientUserId = assignedTo; // Loan administrator
+          break;
+        case WORKFLOW_STAGES.UNDER_OPERATIONS_REVIEW:
+          notificationType = NOTIFICATION_TYPES.REQUEST_APPROVED;
+          recipientUserId = assignedTo; // Regional operations team
+          break;
+        case WORKFLOW_STAGES.APPROVED:
+          notificationType = NOTIFICATION_TYPES.REQUEST_APPROVED;
+          recipientUserId = assignedTo; // Core banking team
+          break;
+        case WORKFLOW_STAGES.DISBURSED:
+          notificationType = NOTIFICATION_TYPES.REQUEST_DISBURSED;
+          recipientUserId = requestData.created_by; // Original requester
+          break;
+      }
+    } else if (action === 'reject') {
+      notificationType = NOTIFICATION_TYPES.REQUEST_REJECTED;
+      // Rejections go back to the original requester
+      recipientUserId = requestData.created_by;
+    }
+
+    // Send notification if we have a recipient
+    if (recipientUserId && notificationType) {
+      await sendWorkflowNotification({
+        requestId,
+        recipientUserId,
+        notificationType,
+        requestData,
+        previousStage,
+        newStage,
+        comments,
+        actionBy
+      });
+    }
+
+    // Also notify the requester for major status changes
+    if (requestData.created_by !== recipientUserId &&
+        [NOTIFICATION_TYPES.REQUEST_APPROVED, NOTIFICATION_TYPES.REQUEST_REJECTED, NOTIFICATION_TYPES.REQUEST_DISBURSED].includes(notificationType)) {
+
+      await sendWorkflowNotification({
+        requestId,
+        recipientUserId: requestData.created_by,
+        notificationType,
+        requestData,
+        previousStage,
+        newStage,
+        comments,
+        actionBy
+      });
+    }
+
+  } catch (error) {
+    console.error('Error sending workflow notifications:', error);
+    // Don't throw error to avoid breaking the workflow
   }
 };

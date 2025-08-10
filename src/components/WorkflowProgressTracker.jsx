@@ -11,27 +11,27 @@ const WorkflowProgressTracker = ({
   auditEntries = [], 
   users = {} 
 }) => {
-  // Define the complete workflow stages in order
+  // Define the 5-stage workflow in order
   const workflowStages = [
     {
       stage: WorkflowStage.SUBMITTED,
-      label: 'Submitted',
+      label: 'Archive Team',
       description: 'Request created by Archive Team'
     },
     {
       stage: WorkflowStage.UNDER_LOAN_REVIEW,
-      label: 'Loan Review',
+      label: 'Loan Administrator',
       description: 'Under review by Loan Administrator'
     },
     {
       stage: WorkflowStage.UNDER_OPERATIONS_REVIEW,
-      label: 'Operations Review',
+      label: 'Operations Team',
       description: 'Under review by Regional Operations Team'
     },
     {
       stage: WorkflowStage.APPROVED,
-      label: 'Approved',
-      description: 'Approved and ready for disbursement'
+      label: 'Core Banking',
+      description: 'Approved by Core Banking'
     },
     {
       stage: WorkflowStage.DISBURSED,

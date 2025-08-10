@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Check, X, MessageSquare, ArrowRight, Clock } from 'lucide-react';
 import Button from './ui/Button';
-import { progressWorkflow, canUserPerformAction } from '../utils/workflowManager';
+import { progressWorkflow } from '../utils/workflowManager';
 import { formatWorkflowStage } from '../utils/workflowFormatters';
 import { canPerformWorkflowAction } from '../utils/rolePermissions';
 

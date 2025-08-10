@@ -1,20 +1,27 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Mail, ArrowRight, Loader2, CheckCircle, AlertCircle, Shield, Clock, Lock } from 'lucide-react';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
 import { useAuth } from '../contexts/AuthContext';
 
-const MagicLinkLoginModal = ({ 
-  isOpen, 
-  onClose, 
+const MagicLinkLoginModal = ({
+  isOpen,
+  onClose,
   actionToPerform,
-  getRequiredRole 
+  getRequiredRole,
+  modalState,
+  setModalState
 }) => {
-  const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const { email, isLoading, error, success } = modalState || {
+    email: '',
+    isLoading: false,
+    error: '',
+    success: ''
+  };
+
   const { signInWithMagicLink } = useAuth();
+
+
 
   // ⚡ Fast client-side email validation
   const validateEmailInstantly = (email) => {
@@ -25,9 +32,21 @@ const MagicLinkLoginModal = ({
 
     // Instant domain check
     const isAdfdEmail = email.endsWith('@adfd.ae');
-    const isAuthorizedGmail = email === 'Mamadouourydiallo819@gmail.com';
 
-    if (!isAdfdEmail && !isAuthorizedGmail) {
+    // Authorized test emails (matching AuthContext configuration)
+    const authorizedTestEmails = [
+      'mamadouourydiallo819@gmail.com',
+      'Mamadouourydiallo819@gmail.com', // Case variation
+      'alomran303@gmail.com',
+      'aiglimcard@gmail.com',           // Archive Team
+      'rabbitronlab@gmail.com',         // Loan Administrator
+      'hafssatou280@gmail.com',         // Operations Team (Africa)
+      'diallomittyoury@gmail.com'       // Core Banking
+    ];
+
+    const isAuthorizedTestEmail = authorizedTestEmails.includes(email);
+
+    if (!isAdfdEmail && !isAuthorizedTestEmail) {
       return {
         valid: false,
         error: 'Access restricted to ADFD personnel only. Please use your @adfd.ae email address or contact your system administrator for access.'
@@ -42,46 +61,61 @@ const MagicLinkLoginModal = ({
     if (!email.trim()) return;
 
     // Clear previous states
-    setError('');
-    setSuccess('');
+    setModalState(prev => ({
+      ...prev,
+      error: '',
+      success: ''
+    }));
 
     // Client-side validation
     const clientValidation = validateEmailInstantly(email);
     if (!clientValidation.valid) {
-      setError(clientValidation.error);
+      setModalState(prev => ({
+        ...prev,
+        error: clientValidation.error
+      }));
       return;
     }
 
     console.log('🚀 Sending magic link to:', email);
-    setIsLoading(true);
+    setModalState(prev => ({
+      ...prev,
+      isLoading: true
+    }));
 
     try {
       // Send magic link (validation is handled in AuthContext)
       const { error: magicLinkError } = await signInWithMagicLink(email);
       if (magicLinkError) {
-        console.error('❌ Magic link error:', magicLinkError);
-        setError(magicLinkError || 'Failed to send login link. Please try again.');
+
+        setModalState(prev => ({
+          ...prev,
+          error: magicLinkError || 'Failed to send login link. Please try again.',
+          isLoading: false
+        }));
         return;
       }
 
-      console.log('✅ Magic link sent successfully');
-      setSuccess('🎉 Login link sent! Check your email and click the link to sign in.');
+      const successMessage = '🎉 Login link sent! Check your email and click the link to sign in.';
+      setModalState(prev => ({
+        ...prev,
+        success: successMessage,
+        isLoading: false
+      }));
 
     } catch (error) {
       console.error('❌ Magic link error:', error);
-      setError('Failed to send login link. Please try again.');
-    } finally {
-      setIsLoading(false);
+      setModalState(prev => ({
+        ...prev,
+        error: 'Failed to send login link. Please try again.',
+        isLoading: false
+      }));
     }
   };
 
 
 
   const handleClose = () => {
-    setEmail('');
-    setError('');
-    setSuccess('');
-    setIsLoading(false);
     onClose();
   };
 
@@ -275,7 +309,7 @@ const MagicLinkLoginModal = ({
                   type="email"
                   id="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setModalState(prev => ({ ...prev, email: e.target.value }))}
                   placeholder="your.email@adfd.ae"
                   className="w-full pl-12 pr-4 py-4 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 text-slate-700 font-medium bg-white/80 backdrop-blur-sm hover:bg-white focus:bg-white shadow-sm hover:shadow-md focus:shadow-lg"
                   required
@@ -377,9 +411,12 @@ const MagicLinkLoginModal = ({
             <div className="flex space-x-3">
               <button
                 onClick={() => {
-                  setSuccess('');
-                  setEmail('');
-                  setError('');
+                  setModalState(prev => ({
+                    ...prev,
+                    success: '',
+                    email: '',
+                    error: ''
+                  }));
                 }}
                 className="flex-1 bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2"
               >

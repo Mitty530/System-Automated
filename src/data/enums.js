@@ -1,11 +1,12 @@
 // Workflow stages and decision types for the enhanced request details system
+// 5-stage workflow: Archive Team → Loan Admin → Operations Teams → Core Banking → Disbursed
 export const WorkflowStage = {
-  SUBMITTED: 'submitted',
-  UNDER_LOAN_REVIEW: 'under_loan_review',
-  UNDER_OPERATIONS_REVIEW: 'under_operations_review',
-  RETURNED_FOR_MODIFICATION: 'returned_for_modification',
-  APPROVED: 'approved',
-  DISBURSED: 'disbursed'
+  SUBMITTED: 'submitted',                    // Archive Team creates request
+  UNDER_LOAN_REVIEW: 'under_loan_review',   // Loan Administrator reviews
+  UNDER_OPERATIONS_REVIEW: 'under_operations_review', // Operations Teams review
+  RETURNED_FOR_MODIFICATION: 'returned_for_modification', // Operations rejected, back to loan admin
+  APPROVED: 'approved',                      // Core Banking approves
+  DISBURSED: 'disbursed'                    // Automatically disbursed after core banking approval
 };
 
 export const DecisionType = {

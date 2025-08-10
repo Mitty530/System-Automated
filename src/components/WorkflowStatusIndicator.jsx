@@ -13,19 +13,19 @@ const WorkflowStatusIndicator = ({
   const workflowStages = [
     {
       stage: WorkflowStage.SUBMITTED,
-      label: 'Submitted',
+      label: 'Archive Team',
       description: 'Archive team created and submitted request',
       icon: <Clock className="w-4 h-4" />
     },
     {
       stage: WorkflowStage.UNDER_LOAN_REVIEW,
-      label: 'Under Loan Review',
+      label: 'Loan Administrator',
       description: 'Loan administrator reviewing request details',
       icon: <AlertCircle className="w-4 h-4" />
     },
     {
       stage: WorkflowStage.UNDER_OPERATIONS_REVIEW,
-      label: 'Under Operations Review',
+      label: 'Operations Team',
       description: 'Regional operations team reviewing for approval',
       icon: <Clock className="w-4 h-4" />
     },

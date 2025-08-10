@@ -3,10 +3,11 @@ import { DollarSign, Plus, User, Settings } from 'lucide-react';
 import Button from './ui/Button';
 import UserRoleIndicator from './UserRoleIndicator';
 import LogoutButton from './LogoutButton';
+import NotificationBell from './NotificationBell';
 
 const Header = ({ currentUser, onProfileClick, onCreateRequest, onLogout }) => {
   return (
-    <header className="relative z-10 backdrop-blur-xl bg-white/80 shadow-lg border-b border-white/20">
+    <header className="relative z-50 backdrop-blur-xl bg-white/80 shadow-lg border-b border-white/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <div className="flex items-center space-x-4">
@@ -34,8 +35,9 @@ const Header = ({ currentUser, onProfileClick, onCreateRequest, onLogout }) => {
             
             {currentUser ? (
               <div className="flex items-center space-x-3">
+                <NotificationBell />
                 <LogoutButton onLogout={onLogout} />
-                <button 
+                <button
                   onClick={onProfileClick}
                   className="flex items-center space-x-3 bg-white/50 backdrop-blur-md rounded-2xl px-4 py-3 shadow-lg hover:bg-white/70 transition-all duration-200 group"
                 >

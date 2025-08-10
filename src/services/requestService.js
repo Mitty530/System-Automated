@@ -174,26 +174,64 @@ export const getCreatedRequests = async (userId) => {
  * Update request status and stage
  * @param {number} requestId - Request ID
  * @param {object} updates - Updates to apply
+ * @param {string} userId - User ID performing the update
  * @returns {Promise<object>} - Updated request
  */
-export const updateRequest = async (requestId, updates) => {
+export const updateRequest = async (requestId, updates, userId = null) => {
   try {
-    const { data, error } = await supabase
-      .from('withdrawal_requests')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', requestId)
-      .select()
-      .single();
+    // If no userId provided, try to get current user
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Get user profile ID
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+        userId = profile?.id;
+      }
+    }
+
+    if (!userId) {
+      // Fallback to direct update if no user context
+      const { data, error } = await supabase
+        .from('withdrawal_requests')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', requestId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating request:', error);
+        throw error;
+      }
+
+      return data;
+    }
+
+    // Use secure function if user context available
+    const updateData = {
+      ...updates,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data: updatedRequest, error } = await supabase
+      .rpc('update_withdrawal_request_secure', {
+        request_id: requestId,
+        user_id: userId,
+        update_data: updateData
+      });
 
     if (error) {
       console.error('Error updating request:', error);
       throw error;
     }
 
-    return data;
+    return updatedRequest;
   } catch (error) {
     console.error('Error in updateRequest:', error);
     throw error;
@@ -521,7 +559,7 @@ export const recordDecision = async (requestId, userId, decisionType, comment, f
       })
       .select(`
         *,
-        user_profiles!request_decisions_user_id_fkey (
+        user_profiles (
           full_name,
           role
         )
@@ -571,11 +609,11 @@ export const recordDecision = async (requestId, userId, decisionType, comment, f
     }
 
     const { data: updatedRequest, error: updateError } = await supabase
-      .from('withdrawal_requests')
-      .update(updateData)
-      .eq('id', requestId)
-      .select()
-      .single();
+      .rpc('update_withdrawal_request_secure', {
+        request_id: requestId,
+        user_id: userId,
+        update_data: updateData
+      });
 
     if (updateError) {
       console.error('Error updating request:', updateError);
@@ -607,7 +645,7 @@ export const getRequestDecisions = async (requestId) => {
       .from('request_decisions')
       .select(`
         *,
-        user_profiles!request_decisions_user_id_fkey (
+        user_profiles (
           full_name,
           role
         )
