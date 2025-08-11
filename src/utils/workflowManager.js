@@ -1,7 +1,7 @@
 // Workflow management system for ADFD withdrawal requests
 import { supabase } from '../lib/supabase.js';
 import { getRegionForCountry } from './regionalMapping.js';
-import { logWorkflowProgress, logRequestCreation, logRequestSubmission } from '../services/auditService.js';
+import { logWorkflowProgress, logRequestCreation } from '../services/auditService.js';
 import { sendWorkflowNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 
 // 5-stage workflow: Archive Team → Loan Admin → Operations Teams → Core Banking → Disbursed
