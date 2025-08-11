@@ -402,7 +402,7 @@ const LandingPage = memo(({ onGetStarted, userProfile }) => {
               Ready to Transform Your Financial Operations?
             </h2>
             <p className="cta-description-new">
-              Join leading financial institutions worldwide who trust our platform for secure, efficient, and intelligent fund disbursement operations.
+              Experience the future of financial operations with our advanced platform designed for secure, efficient, and intelligent fund disbursement.
             </p>
             <div style={{ display: 'flex', gap: 'var(--space-6)', justifyContent: 'center', flexWrap: 'wrap' }}>
               {user && userProfile ? (
