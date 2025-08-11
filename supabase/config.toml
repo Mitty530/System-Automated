@@ -9,7 +9,7 @@ max_rows = 1000
 
 [auth]
 enabled = true
-site_url = "https://www.quandrox.com/dashboard"
+site_url = "https://www.quandrox.com"
 additional_redirect_urls = [
   "https://www.quandrox.com/auth/callback",
   "https://www.quandrox.com/dashboard",

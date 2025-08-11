@@ -9,44 +9,23 @@ const AuthCallback = () => {
 
   useEffect(() => {
     const handleAuthCallback = async () => {
-      // Wait for auth to finish loading
-      if (loading) {
-        return;
-      }
-
-      // Prevent multiple redirects
-      if (redirecting) {
-        return;
-      }
-
-      setRedirecting(true);
-
-      // If we have a user, authentication was successful - redirect to dashboard
-      if (user) {
-        console.log('✅ Magic link authentication successful, redirecting to dashboard');
-        navigate('/dashboard', { replace: true });
-        return;
-      }
-
-      // If no user and not loading, authentication failed - redirect to landing
-      console.log('❌ Magic link authentication failed, redirecting to landing page');
-      navigate('/', { replace: true });
+      // Immediately redirect to dashboard - let the dashboard handle auth state
+      console.log('🔄 Auth callback received, redirecting to dashboard immediately');
+      navigate('/dashboard', { replace: true });
     };
 
-    // Use a short timeout to allow auth state to settle, then handle callback
-    const timeoutId = setTimeout(handleAuthCallback, 200);
+    // Redirect immediately without waiting
+    handleAuthCallback();
+  }, [navigate]);
 
-    return () => clearTimeout(timeoutId);
-  }, [user, loading, navigate, redirecting]);
-
-  // Minimal loading state - user will be redirected quickly
+  // Minimal loading state - user will be redirected immediately
   const renderStatus = () => (
     <div className="text-center">
-      <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-        <span className="text-2xl text-white">🔐</span>
+      <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <span className="text-2xl text-white">🚀</span>
       </div>
-      <h2 className="text-xl font-semibold text-gray-800 mb-2">Signing you in...</h2>
-      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+      <h2 className="text-xl font-semibold text-gray-800 mb-2">Redirecting to dashboard...</h2>
+      <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
     </div>
   );
 
