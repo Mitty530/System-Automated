@@ -9,8 +9,17 @@ max_rows = 1000
 
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["https://localhost:3000"]
+site_url = "https://www.quandrox.com"
+additional_redirect_urls = [
+  "https://www.quandrox.com/auth/callback",
+  "https://www.quandrox.com/dashboard",
+  "https://quandrox.com/auth/callback",
+  "https://quandrox.com/dashboard",
+  "http://localhost:5173/auth/callback",
+  "http://localhost:5173/dashboard",
+  "http://localhost:3000/auth/callback",
+  "http://localhost:3000/dashboard"
+]
 jwt_expiry = 3600
 
 [auth.email]
