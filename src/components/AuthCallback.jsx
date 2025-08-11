@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../services/supabaseClient';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -9,12 +10,38 @@ const AuthCallback = () => {
 
   useEffect(() => {
     const handleAuthCallback = async () => {
-      // Immediately redirect to dashboard - let the dashboard handle auth state
-      console.log('🔄 Auth callback received, redirecting to dashboard immediately');
-      navigate('/dashboard', { replace: true });
+      try {
+        console.log('🔄 Processing auth callback...');
+
+        // Get the current URL to check for auth tokens
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get('code');
+
+        if (code) {
+          console.log('📧 Magic link code found, processing authentication...');
+
+          // Let Supabase handle the auth callback
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+          if (error) {
+            console.error('❌ Auth callback error:', error);
+            navigate('/', { replace: true });
+            return;
+          }
+
+          console.log('✅ Authentication successful, redirecting to dashboard');
+        }
+
+        // Redirect to dashboard
+        navigate('/dashboard', { replace: true });
+
+      } catch (error) {
+        console.error('❌ Auth callback error:', error);
+        navigate('/', { replace: true });
+      }
     };
 
-    // Redirect immediately without waiting
+    // Process the callback
     handleAuthCallback();
   }, [navigate]);
 
