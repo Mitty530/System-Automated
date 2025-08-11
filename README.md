@@ -4,6 +4,7 @@
 [![Vite](https://img.shields.io/badge/Vite-6.2.0-646CFF.svg)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1.11-38B2AC.svg)](https://tailwindcss.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-Backend-green.svg)](https://supabase.com/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-quandrox.com-success.svg)](https://www.quandrox.com/)
 
 Enterprise-grade withdrawal request platform for the **Abu Dhabi Fund for Development (ADFD)** with intelligent automation, regional intelligence, and bank-level security.
 
