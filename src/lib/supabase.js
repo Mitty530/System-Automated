@@ -60,7 +60,7 @@ export const sendMagicLink = async (email) => {
       email,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
-        shouldCreateUser: false, // Only allow existing users
+        shouldCreateUser: true, // Allow user creation for magic links
         data: {
           timestamp: Date.now() // Add timestamp for tracking
         }
