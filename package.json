@@ -1,7 +1,7 @@
 {
   "name": "8a85f953ebb0b8f702e25203ffa683cae081efe39a97f0736fdf236cd73106cb",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
